@@ -171,11 +171,11 @@ Once your environment is ready (Terraform, AWS credentials, and Cloudflare API t
 ### 1. Clone the Repository
 
 ```bash
-git clone https://github.com/fish-not-phish/OvB.git
+git clone https://github.com/fish-not-phish/open-vbrowser.git
 ```
 ### 2. Change directory into terraform folder
 ```bash
-cd OvB/terraform
+cd open-vbrowser/terraform
 ```
 ### 3. Run the setup script
 ```bash
@@ -292,7 +292,7 @@ Please wait until it stops producing output and says `All done.`. Once this occu
 To tear everything down cleanly — including AWS resources and local containers — run the following:
 
 ```bash
-cd OvB/terraform
+cd open-vbrowser/terraform
 ./destroy.sh
 ```
 This script requires no input. It will:
