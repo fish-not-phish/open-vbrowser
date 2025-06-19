@@ -1,0 +1,32 @@
+{% load static %}
+<nav class="navbar navbar-expand-lg fixed-top bg-body-tertiary">
+    <div class="container-fluid">
+      
+      <a class="navbar-brand ps-5 nav-title-text" href="{% url 'session' %}" style="color:white"><img class="rounded-lg-3" style="background:transparent;margin-right: 10px;"src="{% static 'images/vbrowser.png' %}" alt="vBrowser Icon" width="50">vBrowser</a>
+      <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+        <span class="navbar-toggler-icon"></span>
+      </button>
+      <div class="collapse navbar-collapse" id="navbarNav">
+        <ul class="navbar-nav ms-auto pe-5 ps-5">
+          {% if user.is_authenticated %}
+          <li class="nav-item">
+            <a class="nav-link nav-text" href="{% url 'session' %}" style="color:white">Session</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link nav-text" href="{% url 'profile' %}" style="color:white">Profile</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link nav-text" href="{% url 'account_logout' %}" style="color:white">Log Out</a>
+          </li>
+          {% else %}
+          <li class="nav-item">
+            <a class="nav-link nav-text" href="{% url 'account_login' %}" style="color:white">Login</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link nav-text" href="{% url 'account_signup' %}" style="color:white">Register</a>
+          </li>
+          {% endif %}
+        </ul>
+      </div>
+    </div>
+  </nav>

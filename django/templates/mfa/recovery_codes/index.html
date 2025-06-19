@@ -1,0 +1,49 @@
+{% extends "main/main.html" %}
+{% block title %} vBrowser - Recovery Codes{% endblock %}
+{% load static %}
+{% load i18n %}
+{% load account socialaccount %}
+{% block styles %}{% endblock %}
+{% block content %}
+
+{% include 'main/nav2.html' %}
+
+<!-- Page content -->
+<section class="position-relative h-100 pt-5 pb-4">
+  <!-- Recovery Codes Section -->
+  <div class="container d-flex flex-wrap justify-content-center justify-content-xl-start h-100 pt-5">
+    <div class="w-100 align-self-end pt-1 pt-md-4 pb-4" style="max-width: 526px;">
+      <h1 class="text-center text-xl-start">{% trans "Recovery Codes" %}</h1>
+      <p class="text-center text-xl-start pb-3 mb-3">
+        {% blocktranslate count unused_count=unused_codes|length %}
+          There is {{ unused_count }} out of {{ total_count }} recovery code available.
+        {% plural %}
+          There are {{ unused_count }} out of {{ total_count }} recovery codes available.
+        {% endblocktranslate %}
+      </p>
+      <div class="mb-3">
+        <textarea id="recovery_codes" disabled readonly rows="{{ unused_codes|length }}" class="form-control" style="background: transparent; color: #fff; font-family: monospace, serif; letter-spacing: 0.05em;">
+{% for code in unused_codes %}
+{{ code }}{% if not forloop.last %}&#10;{% endif %}
+{% endfor %}
+        </textarea>
+      </div>
+      <div class="d-flex flex-wrap gap-2">
+        {% if unused_codes %}
+          <a href="{% url 'mfa_download_recovery_codes' %}" class="btn btn-primary shadow-primary btn-lg w-100">
+            {% trans "Download codes" %}
+          </a>
+        {% endif %}
+        <a href="{% url 'mfa_generate_recovery_codes' %}" class="btn btn-primary shadow-primary btn-lg w-100">
+          {% trans "Generate new codes" %}
+        </a>
+      </div>
+    </div>
+  </div>
+  
+  <!-- Background -->
+  <div class="position-absolute top-0 end-0 w-50 h-100 bg-position-center bg-repeat-0 bg-size-cover d-none d-xl-block"
+       style="background-image: url('{% static 'assets/img/account/signin-bg.jpg' %}');"></div>
+</section>
+
+{% endblock %}

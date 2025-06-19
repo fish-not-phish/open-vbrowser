@@ -1,0 +1,11 @@
+#!/bin/bash
+
+/opt/Postman/Postman \
+   "$@" > /dev/null 2>&1
+
+PROCESS_NAME="Postman"
+
+
+
+
+

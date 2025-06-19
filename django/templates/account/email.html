@@ -1,0 +1,56 @@
+{% extends "main/main.html" %}
+{% block title %} vBrowser - Account{% endblock %}
+{% load static %}
+{% load i18n %}
+{% load account %}
+{% block styles %}
+{% endblock %}
+{% block content %}
+
+{% include 'main/nav2.html' %}
+
+<!-- Page content -->
+<section class="position-relative h-100 pt-5 pb-4">
+  <!-- Email Addresses form -->
+  <div class="container d-flex flex-wrap justify-content-center justify-content-xl-start h-100 pt-5">
+    <div class="w-100 align-self-end pt-1 pt-md-4 pb-4" style="max-width: 526px;">
+      <h1 class="text-center text-xl-start">{% trans "Email Addresses" %}</h1>
+      {% if emailaddresses %}
+        <p class="text-center text-xl-start pb-3 mb-3">{% trans "The following email addresses are associated with your account:" %}</p>
+        {% url 'account_email' as email_url %}
+        <form method="post" action="{{ email_url }}" class="needs-validation mb-2">
+          {% csrf_token %}
+          <div class="list-group mb-3">
+            {% for emailaddress in emailaddresses %}
+              <div class="list-group-item">
+                <div class="d-flex justify-content-between align-items-center">
+                  <div class="email-adr">
+                    {{ emailaddress.email }}
+                  </div>
+                  <div>
+                    {% if emailaddress.verified %}
+                      <span class="badge bg-success">{% trans "Verified" %}</span>
+                    {% else %}
+                      <span class="badge bg-warning">{% trans "Unverified" %}</span>
+                      <input type="hidden" name="email" value="{{ emailaddress.email }}">
+                      <button type="submit" name="action_send" value="{{ emailaddress.email }}" class="btn btn-outline-dark ms-3">
+                        {% trans "Re-send Verification" %}
+                      </button>
+                    {% endif %}
+                  </div>
+                </div>
+              </div>
+            {% endfor %}
+          </div>
+        </form>
+      {% else %}
+        {% include "account/snippets/warn_no_email.html" %}
+      {% endif %}
+    </div>
+  </div>
+  
+  <!-- Background -->
+  <div class="position-absolute top-0 end-0 w-50 h-100 bg-position-center bg-repeat-0 bg-size-cover d-none d-xl-block" style="background-image: url('{% static 'assets/img/account/signin-bg.jpg' %}');"></div>
+</section>
+
+{% endblock %}

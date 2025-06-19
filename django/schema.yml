@@ -1,0 +1,330 @@
+openapi: 3.0.3
+info:
+  title: vBrowser.io API
+  version: 1.0.0
+  description: Secured and Isolated Free Virtual Browser
+paths:
+  /create-session/:
+    post:
+      operationId: create_session_create
+      description: |-
+        API endpoint to create a new session.
+        Expects:
+          - The special integration key in the header "X-Special-Key".
+          - The API token in the "Authorization" header as "Token <api_token>".
+          - Optionally, a JSON payload with:
+              - "url": Base64 encoded URL to open in the session (defaults to "google.com" decoded).
+              - "session_type": The session type (defaults to "vStandard").
+      summary: Create Session
+      parameters:
+      - in: header
+        name: Authorization
+        schema:
+          type: string
+        description: Token-based authentication with required prefix "Token"
+        required: true
+      - in: header
+        name: X-Special-Key
+        schema:
+          type: string
+        description: Special integration key required for accessing the API
+        required: true
+      tags:
+      - create-session
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateSessionRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/CreateSessionRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/CreateSessionRequest'
+      security:
+      - tokenAuth: []
+      - TokenAuth: []
+      - X-Special-Key: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CreateSessionResponse'
+          description: ''
+        '400':
+          description: Bad Request
+        '403':
+          description: Forbidden
+  /get-session/:
+    get:
+      operationId: get_session_retrieve
+      description: |-
+        API endpoint to get the session URL of the user's active session.
+        Expects:
+          - The special integration key in the header "X-Special-Key".
+          - The API token in the "Authorization" header as "Token <api_token>".
+          - Returns:
+            - session_url: URL for accessing the session.
+      summary: Get Session
+      parameters:
+      - in: header
+        name: Authorization
+        schema:
+          type: string
+        description: Token-based authentication with required prefix "Token"
+        required: true
+      - in: header
+        name: X-Special-Key
+        schema:
+          type: string
+        description: Special integration key required for accessing the API
+        required: true
+      tags:
+      - get-session
+      security:
+      - tokenAuth: []
+      - TokenAuth: []
+      - X-Special-Key: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SessionURLResponse'
+          description: ''
+        '400':
+          description: Bad Request
+        '403':
+          description: Forbidden
+        '404':
+          description: Not Found
+  /schema/:
+    get:
+      operationId: schema_retrieve
+      description: |-
+        OpenApi3 schema for this API. Format can be selected via content negotiation.
+
+        - YAML: application/vnd.oai.openapi
+        - JSON: application/vnd.oai.openapi+json
+      parameters:
+      - in: query
+        name: format
+        schema:
+          type: string
+          enum:
+          - json
+          - yaml
+      - in: query
+        name: lang
+        schema:
+          type: string
+          enum:
+          - af
+          - ar
+          - ar-dz
+          - ast
+          - az
+          - be
+          - bg
+          - bn
+          - br
+          - bs
+          - ca
+          - ckb
+          - cs
+          - cy
+          - da
+          - de
+          - dsb
+          - el
+          - en
+          - en-au
+          - en-gb
+          - eo
+          - es
+          - es-ar
+          - es-co
+          - es-mx
+          - es-ni
+          - es-ve
+          - et
+          - eu
+          - fa
+          - fi
+          - fr
+          - fy
+          - ga
+          - gd
+          - gl
+          - he
+          - hi
+          - hr
+          - hsb
+          - hu
+          - hy
+          - ia
+          - id
+          - ig
+          - io
+          - is
+          - it
+          - ja
+          - ka
+          - kab
+          - kk
+          - km
+          - kn
+          - ko
+          - ky
+          - lb
+          - lt
+          - lv
+          - mk
+          - ml
+          - mn
+          - mr
+          - ms
+          - my
+          - nb
+          - ne
+          - nl
+          - nn
+          - os
+          - pa
+          - pl
+          - pt
+          - pt-br
+          - ro
+          - ru
+          - sk
+          - sl
+          - sq
+          - sr
+          - sr-latn
+          - sv
+          - sw
+          - ta
+          - te
+          - tg
+          - th
+          - tk
+          - tr
+          - tt
+          - udm
+          - ug
+          - uk
+          - ur
+          - uz
+          - vi
+          - zh-hans
+          - zh-hant
+      tags:
+      - schema
+      security:
+      - tokenAuth: []
+      - TokenAuth: []
+      - X-Special-Key: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/vnd.oai.openapi:
+              schema:
+                type: object
+                additionalProperties: {}
+            application/yaml:
+              schema:
+                type: object
+                additionalProperties: {}
+            application/vnd.oai.openapi+json:
+              schema:
+                type: object
+                additionalProperties: {}
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+  /terminate-session/:
+    post:
+      operationId: terminate_session_create
+      description: Terminates the user's active session.
+      summary: Terminate Session
+      parameters:
+      - in: header
+        name: Authorization
+        schema:
+          type: string
+        description: Token-based authentication with required prefix "Token"
+        required: true
+      - in: header
+        name: X-Special-Key
+        schema:
+          type: string
+        description: Special integration key required for accessing the API
+        required: true
+      tags:
+      - terminate-session
+      security:
+      - tokenAuth: []
+      - TokenAuth: []
+      - X-Special-Key: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TerminateSessionResponse'
+          description: ''
+        '400':
+          description: Bad Request
+        '403':
+          description: Forbidden
+        '404':
+          description: Not Found
+components:
+  schemas:
+    CreateSessionRequest:
+      type: object
+      properties:
+        url:
+          type: string
+          default: Z29vZ2xlLmNvbQ==
+          description: Base64 encoded URL to open in the session (optional)
+        session_type:
+          type: string
+          default: vStandard
+          description: Session type (optional)
+    CreateSessionResponse:
+      type: object
+      properties:
+        session_uuid:
+          type: string
+          format: uuid
+        seconds:
+          type: integer
+      required:
+      - seconds
+      - session_uuid
+    SessionURLResponse:
+      type: object
+      properties:
+        session_url:
+          type: string
+      required:
+      - session_url
+    TerminateSessionResponse:
+      type: object
+      properties:
+        message:
+          type: string
+      required:
+      - message
+  securitySchemes:
+    tokenAuth:
+      type: apiKey
+      in: header
+      name: Authorization
+      description: Token-based authentication with required prefix "Token"

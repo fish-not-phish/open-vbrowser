@@ -1,0 +1,37 @@
+{% extends "main/main.html" %}
+{% block title %} vBrowser - Two-Factor Verification{% endblock %}
+{% load static %}
+{% load i18n %}
+{% load account socialaccount %}
+{% block styles %}{% endblock %}
+{% block content %}
+
+{% include 'main/nav2.html' %}
+
+<!-- Page content -->
+<section class="position-relative h-100 pt-5 pb-4">
+  <!-- Two-Factor Verification Form -->
+  <div class="container d-flex flex-wrap justify-content-center justify-content-xl-start h-100 pt-5">
+    <div class="w-100 align-self-end pt-1 pt-md-4 pb-4" style="max-width: 526px;">
+      <h1 class="text-center text-xl-start">{% trans "Two-Factor Verification" %}</h1>
+      <p class="text-center text-xl-start pb-3 mb-3">
+        {% trans "Enter the two-factor authentication code provided by the authenticator app." %}
+      </p>
+      <form action="{% url 'mfa_authenticate' %}" method="post" class="needs-validation mb-2">
+        {% csrf_token %}
+        <div class="mb-3">
+          {{ form.code.as_widget }}
+        </div>
+        <button type="submit" class="btn btn-primary shadow-primary btn-lg w-100">
+          {% trans "Verify" %}
+        </button>
+      </form>
+    </div>
+  </div>
+  
+  <!-- Background -->
+  <div class="position-absolute top-0 end-0 w-50 h-100 bg-position-center bg-repeat-0 bg-size-cover d-none d-xl-block"
+       style="background-image: url('{% static 'assets/img/account/signin-bg.jpg' %}');"></div>
+</section>
+
+{% endblock %}

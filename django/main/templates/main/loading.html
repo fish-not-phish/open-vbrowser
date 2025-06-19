@@ -1,0 +1,221 @@
+{% extends "main/main.html" %}
+{% block title %} vBrowser - Loading{% endblock %}
+{% load static %}
+{% block styles %}
+{% endblock %}
+{% block content %}
+
+{% include 'main/nav2.html' %}
+<style>
+    .loading-container {
+      margin-top: 75px !important;
+      width: 100%;
+      max-width: 520px;
+      text-align: center;
+      color: #fff;
+      position: relative;
+      margin: 0 32px;
+    }
+    
+    .card-container {
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+    
+    .card {
+      background-color: #444;
+      border-radius: 10px;
+      padding: 20px;
+      color: black;
+      text-align: center;
+      transition: background-color 0.5s;
+    }
+    
+    .card.completed {
+      background-color: #4CAF50; /* Green */
+    }
+    
+    .card.pulsing {
+      animation: pulse 1.5s infinite;
+    }
+    
+    @keyframes pulse {
+      0% {
+        background-color: #444;
+      }
+      50% {
+        background-color: #666;
+      }
+      100% {
+        background-color: #444;
+      }
+    }
+    
+    .loading-text {
+      font-size: 5vw;
+      line-height: 64px;
+      letter-spacing: 10px;
+      margin-bottom: 32px;
+      display: flex;
+      justify-content: space-evenly;
+    }
+    .loading-text span {
+      -webkit-animation: moveLetters 2.4s infinite ease-in-out;
+              animation: moveLetters 2.4s infinite ease-in-out;
+      transform: translatex(0);
+      position: relative;
+      display: inline-block;
+      opacity: 0;
+      color:#9251ac;
+      text-shadow: 0px 2px 10px rgba(46, 74, 81, 0.3);
+    }
+    
+    .loading-text span:nth-child(1) {
+      -webkit-animation-delay: 0.1s;
+              animation-delay: 0.1s;
+    }
+    
+    .loading-text span:nth-child(2) {
+      -webkit-animation-delay: 0.2s;
+              animation-delay: 0.2s;
+    }
+    
+    .loading-text span:nth-child(3) {
+      -webkit-animation-delay: 0.3s;
+              animation-delay: 0.3s;
+    }
+    
+    .loading-text span:nth-child(4) {
+      -webkit-animation-delay: 0.4s;
+              animation-delay: 0.4s;
+    }
+    
+    .loading-text span:nth-child(5) {
+      -webkit-animation-delay: 0.5s;
+              animation-delay: 0.5s;
+    }
+    
+    .loading-text span:nth-child(6) {
+      -webkit-animation-delay: 0.6s;
+              animation-delay: 0.6s;
+    }
+    
+    .loading-text span:nth-child(7) {
+      -webkit-animation-delay: 0.7s;
+              animation-delay: 0.7s;
+    }
+    
+    @-webkit-keyframes moveLetters {
+      0% {
+        transform: translateX(-15vw);
+        opacity: 0;
+      }
+      33.3%, 66% {
+        transform: translateX(0);
+        opacity: 1;
+      }
+      100% {
+        transform: translateX(15vw);
+        opacity: 0;
+      }
+    }
+    
+    @keyframes moveLetters {
+      0% {
+        transform: translateX(-15vw);
+        opacity: 0;
+      }
+      33.3%, 66% {
+        transform: translateX(0);
+        opacity: 1;
+      }
+      100% {
+        transform: translateX(15vw);
+        opacity: 0;
+      }
+    }
+    
+    .body-size {
+        width: 100%;
+        height: 85vh;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        overflow: hidden;
+    }
+    </style>
+<div class="body-size">
+    <div class="loading-container">
+      <div class="loading-text">
+        <span>L</span>
+        <span>O</span>
+        <span>A</span>
+        <span>D</span>
+        <span>I</span>
+        <span>N</span>
+        <span>G</span>
+      </div>
+      <div class="card-container">
+        <div class="card" id="card1">Verifying request</div>
+        <div class="card" id="card2">Sending request</div>
+        <div class="card" id="card3">Finding a Server</div>
+        <div class="card" id="card4">Creating container</div>
+        <div class="card" id="card5">Creating certificate</div>
+        <div class="card" id="card6">Connecting user</div>
+      </div>
+    </div>
+  </div>
+  <script>
+    const MAX_WAIT_TIME = '{{ max_wait_time }}';
+  
+    function checkContainerStatus() {
+        const containerUUID = '{{ container_uuid }}';
+        fetch(`/container_status/${containerUUID}`)
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === 'active') {
+                  setTimeout(() => {
+                        window.location.href = `/session/${containerUUID}`;
+                    }, 5000);
+                } else {
+                    setTimeout(checkContainerStatus, 6000);
+                }
+            });
+    }
+  
+    function updateCardStatus() {
+      const cardIntervals = [10000, 20000, 30000, 40000, 50000, 70000];
+        const cards = document.querySelectorAll('.card');
+        let currentCardIndex = 0;
+  
+        function updateCard() {
+            if (currentCardIndex > 0) {
+                cards[currentCardIndex - 1].classList.remove('pulsing');
+                cards[currentCardIndex - 1].classList.add('completed');
+            }
+            if (currentCardIndex < cards.length) {
+                cards[currentCardIndex].classList.add('pulsing');
+                setTimeout(updateCard, cardIntervals[currentCardIndex] - (currentCardIndex > 0 ? cardIntervals[currentCardIndex - 1] : 0));
+                currentCardIndex++;
+            }
+        }
+  
+        updateCard();
+    }
+  
+    function startTimeout() {
+        setTimeout(() => {
+            window.location.href = `/?failed=True`;
+        }, MAX_WAIT_TIME);
+    }
+  
+    document.addEventListener("DOMContentLoaded", function() {
+        checkContainerStatus();
+        updateCardStatus();
+        startTimeout();
+    });
+  </script>
+
+
+{% endblock %}

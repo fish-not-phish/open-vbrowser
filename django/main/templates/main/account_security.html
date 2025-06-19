@@ -1,0 +1,116 @@
+{% extends "main/main.html" %}
+{% block title %} vBrowser - Account Security{% endblock %}
+{% load static %}
+{% block styles %}
+{% endblock %}
+{% block content %}
+
+{% include 'main/nav2.html' %}
+
+<section class="container mt-lg-4 pt-5">
+    <div class="row">
+      <!-- Sidebar -->
+      <aside class="col-lg-3 col-md-4 border-end pb-5 mt-n5">
+        <div class="position-sticky top-0">
+          <div class="text-center pt-5">
+            <div class="d-table position-relative mx-auto mt-2 mt-lg-4 pt-5 mb-3">
+              {% if user.profile_image %}
+              <img src="{% static 'images/user.png' %}" class="d-block rounded-circle" width="120" alt="{{ user.get_full_name }}">
+              {% else %}
+              <img src="{% static 'images/user.png' %}" class="d-block rounded-circle" width="120" alt="{{ user.get_full_name }}">
+              {% endif %}
+            </div>
+            <h2 class="h5 mb-1">{{ user.first_name }} {{ user.last_name }}</h2>
+            <p class="mb-3 pb-3">{{ user.email }}</p>
+            <button type="button" class="btn btn-secondary w-100 d-md-none mt-n2 mb-3" data-bs-toggle="collapse" data-bs-target="#account-menu">
+              <i class="bx bxs-user-detail fs-xl me-2"></i>
+              Account menu
+              <i class="bx bx-chevron-down fs-lg ms-1"></i>
+            </button>
+            <div id="account-menu" class="list-group list-group-flush collapse d-md-block">
+              <a href="{% url 'account_settings' %}" class="list-group-item list-group-item-action d-flex align-items-center">
+                <i class="bx bx-cog fs-xl opacity-60 me-2"></i>
+                Account Details
+              </a>
+              <a href="{% url 'account_security' %}" class="list-group-item list-group-item-action d-flex align-items-center active">
+                <i class="bx bx-lock-alt fs-xl opacity-60 me-2"></i>
+                Security
+              </a>
+              <a href="{% url 'account_api' %}" class="list-group-item list-group-item-action d-flex align-items-center">
+                <i class='bx bxs-key fs-xl opacity-60 me-2'></i>
+                API Key
+              </a>
+            </div>
+          </div>
+        </div>
+      </aside>
+
+      <!-- Security form -->
+      <div class="col-md-8 offset-lg-1 pb-5 mb-lg-2 mb-lg-4 pt-md-5 mt-n3 mt-md-0">
+        <div class="ps-md-3 ps-lg-0 mt-md-2 pt-md-4 pb-md-2">
+          <h1 class="h2 pt-xl-1 pb-3">Security</h1>
+          <h2 class="h5 text-primary mb-4">Password</h2>
+          <form method="post" action="{% url 'account_security' %}" class="needs-validation border-bottom pb-3 pb-lg-4" novalidate>
+            {% csrf_token %}
+            <div class="row">
+              <div class="col-sm-6 mb-4">
+                <label for="current_password" class="form-label fs-base">Current password</label>
+                <div class="password-toggle">
+                  <input type="password" id="current_password" name="current_password" class="form-control form-control-lg" required>
+                  <label class="password-toggle-btn" aria-label="Show/hide password">
+                    <input class="password-toggle-check" type="checkbox">
+                    <span class="password-toggle-indicator"></span>
+                  </label>
+                </div>
+              </div>
+            </div>
+            <div class="row pb-2">
+              <div class="col-sm-6 mb-4">
+                <label for="new_password" class="form-label fs-base">New password</label>
+                <div class="password-toggle">
+                  <input type="password" id="new_password" name="new_password" class="form-control form-control-lg" required>
+                  <label class="password-toggle-btn" aria-label="Show/hide password">
+                    <input class="password-toggle-check" type="checkbox">
+                    <span class="password-toggle-indicator"></span>
+                  </label>
+                </div>
+              </div>
+              <div class="col-sm-6 mb-4">
+                <label for="new_password_confirm" class="form-label fs-base">Confirm new password</label>
+                <div class="password-toggle">
+                  <input type="password" id="new_password_confirm" name="new_password_confirm" class="form-control form-control-lg" required>
+                  <label class="password-toggle-btn" aria-label="Show/hide password">
+                    <input class="password-toggle-check" type="checkbox">
+                    <span class="password-toggle-indicator"></span>
+                  </label>
+                </div>
+              </div>
+            </div>
+            <div class="d-flex mb-3">
+              <button type="reset" class="btn btn-secondary me-3">Cancel</button>
+              <button type="submit" class="btn btn-primary">Save changes</button>
+            </div>
+          </form>
+          {% if messages %}
+            <div class="alert alert-info">
+              {% for message in messages %}
+                <p>{{ message }}</p>
+              {% endfor %}
+            </div>
+          {% endif %}
+        </div>
+        <div class="mfa mb-3 mt-5">
+            <h2 class="h5 text-primary mb-4">Multi-Factor Authentication</h2>
+            {% if mfa_enabled %}
+                <p style="color:black;">MFA is currently <strong>enabled</strong> on your account.</p>
+                <a class="btn btn-primary" href="{% url 'mfa_deactivate_totp' %}" role="button">Disable MFA</a>
+            {% else %}
+                <p style="color:black;">MFA is currently <strong style="color: black;">disabled</strong> on your account.</p>
+                <a class="btn btn-primary" href="{% url 'mfa_activate_totp' %}" role="button">Enable MFA</a>
+            {% endif %}
+        </div>
+      </div>
+    </div>   
+  </section>
+
+{% endblock %}

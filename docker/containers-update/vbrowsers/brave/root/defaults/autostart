@@ -1,0 +1,20 @@
+#!/bin/bash
+
+
+/usr/bin/brave-browser-orig \
+  --start-maximized \
+  --no-first-run \
+  --disable-session-crashed-bubble \
+  --simulate-outdated-no-au='Tue, 31 Dec 2099 23:59:59 GMT' \
+  --hide-crash-restore-bubble \
+  --user-data-dir \
+  --password-store=basic \
+  --ignore-gpu-blocklist \
+  --disable-dev-shm-usage \
+  --check-for-update-interval=31449600 \
+  --no-sandbox \
+   "$@" $FF_OPEN_URL
+
+PROCESS_NAME="brave-browser-orig"
+
+

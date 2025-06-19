@@ -1,0 +1,15 @@
+services:
+  containers-updater:
+    image: containers-updater:latest
+    container_name: containers-updater
+    restart: "unless-stopped"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - ./terraform:/terraform
+      - ./automated/certs:/automated/certs
+    env_file:
+      - .env
+    entrypoint: ["/usr/local/bin/update_containers.sh"]
+    command: ["sleep", "infinity"]
+    tty: true
+    stdin_open: true

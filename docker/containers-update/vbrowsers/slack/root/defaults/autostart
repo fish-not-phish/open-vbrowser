@@ -1,0 +1,12 @@
+#!/bin/bash
+
+slack \
+  --no-sandbox \
+   "$@" > /dev/null 2>&1
+
+PROCESS_NAME="slack"
+
+
+
+
+

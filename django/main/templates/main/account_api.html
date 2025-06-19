@@ -1,0 +1,108 @@
+{% extends "main/main.html" %}
+{% block title %} vBrowser - Account Security{% endblock %}
+{% load static %}
+{% block styles %}
+{% endblock %}
+{% block content %}
+
+{% include 'main/nav2.html' %}
+
+<section class="container mt-lg-4 pt-5">
+    <div class="row">
+      <!-- Sidebar -->
+      <aside class="col-lg-3 col-md-4 border-end pb-5 mt-n5">
+        <div class="position-sticky top-0">
+          <div class="text-center pt-5">
+            <div class="d-table position-relative mx-auto mt-2 mt-lg-4 pt-5 mb-3">
+              {% if user.profile_image %}
+              <img src="{% static 'images/user.png' %}" class="d-block rounded-circle" width="120" alt="{{ user.get_full_name }}">
+              {% else %}
+              <img src="{% static 'images/user.png' %}" class="d-block rounded-circle" width="120" alt="{{ user.get_full_name }}">
+              {% endif %}
+            </div>
+            <h2 class="h5 mb-1">{{ user.first_name }} {{ user.last_name }}</h2>
+            <p class="mb-3 pb-3">{{ user.email }}</p>
+            <button type="button" class="btn btn-secondary w-100 d-md-none mt-n2 mb-3" data-bs-toggle="collapse" data-bs-target="#account-menu">
+              <i class="bx bxs-user-detail fs-xl me-2"></i>
+              Account menu
+              <i class="bx bx-chevron-down fs-lg ms-1"></i>
+            </button>
+            <div id="account-menu" class="list-group list-group-flush collapse d-md-block">
+              <a href="{% url 'account_settings' %}" class="list-group-item list-group-item-action d-flex align-items-center">
+                <i class="bx bx-cog fs-xl opacity-60 me-2"></i>
+                Account Details
+              </a>
+              <a href="{% url 'account_security' %}" class="list-group-item list-group-item-action d-flex align-items-center">
+                <i class="bx bx-lock-alt fs-xl opacity-60 me-2"></i>
+                Security
+              </a>
+              <a href="{% url 'account_api' %}" class="list-group-item list-group-item-action d-flex align-items-center active">
+                <i class='bx bxs-key fs-xl opacity-60 me-2'></i>
+                API Key
+              </a>
+            </div>
+          </div>
+        </div>
+      </aside>
+
+      <!-- API details -->
+      <div class="col-md-8 offset-lg-1 pb-5 mb-2 mb-lg-4 pt-md-5 mt-n3 mt-md-0">
+        <div class="ps-md-3 ps-lg-0 mt-md-2 pt-md-4 pb-md-2">
+          <h1 class="h2 pt-xl-1 mb-3 pb-2 pb-lg-3">API Details</h1>
+          <h2 class="h5 text-primary mb-4">Your API Keys</h2>
+
+          <!-- Item -->
+            {% if token %}
+        <!-- API Key card -->
+        <div class="card d-sm-flex flex-sm-row align-items-sm-center justify-content-between border-0 shadow-sm p-3 p-md-4 mb-4">
+          <div class="d-flex align-items-center pe-sm-3">
+            <img src="{% static 'images/api-key.png' %}" width="84" alt="API Key">
+            <div class="ps-3 ps-sm-4">
+              <h6 class="mb-2">API Key</h6>
+              <div class="password-toggle">
+                <input type="password" name="api_key" id="id_key" class="form-control form-control-lg" value="{{ token.key }}" disabled>
+                <label class="password-toggle-btn" aria-label="Show/hide API key">
+                  <input class="password-toggle-check" type="checkbox" onclick="togglePassword()">
+                  <span class="password-toggle-indicator"></span>
+                </label>
+              </div>
+            </div>
+          </div>
+          <div class="d-flex justify-content-end pt-3 pt-sm-0">
+            <!-- Delete API key form -->
+            <form method="post" action="{% url 'account_api' %}">
+              {% csrf_token %}
+              <input type="hidden" name="action" value="delete">
+              <button type="submit" class="btn btn-outline-danger px-3 px-xl-4">
+                <i class="bx bx-trash-alt fs-xl me-lg-1 me-xl-2"></i>
+                <span class="d-none d-lg-inline">Delete</span>
+              </button>
+            </form>
+          </div>
+        </div>
+        {% endif %}
+
+        
+      </div>
+      <!-- Create/Re-create API key button at the bottom -->
+      <div class="py-2">
+        <form method="post" action="{% url 'account_api' %}">
+          {% csrf_token %}
+          <input type="hidden" name="action" value="create">
+          <button type="submit" class="btn btn-primary ps-4">
+            {% if token %}<i class='bx bx-revision fs-xl me-2'></i>{% else %}<i class="bx bx-plus fs-xl me-2"></i>{% endif %}
+            {% if token %}Re-Create API Key{% else %}Create API Key{% endif %}
+          </button>
+        </form>
+      </div>
+    </div>
+  </div>
+</section>
+
+<script>
+function togglePassword() {
+  var keyField = document.getElementById("id_key");
+  keyField.type = (keyField.type === "password") ? "text" : "password";
+}
+</script>
+{% endblock %}

@@ -1,0 +1,62 @@
+{% load static %}
+
+<!-- Navbar -->
+      <!-- Remove "navbar-sticky" class to make navigation bar scrollable with the page -->
+      <header class="header navbar navbar-expand-lg position-absolute bg-light border-bottom border-light shadow-sm navbar-sticky">
+        <div class="container px-3">
+          <a href="{% url 'session' %}" class="navbar-brand pe-3">
+            <img src="{% static 'assets/img/solo-logo-vbrowser-transparent.png' %}" width="47" alt="vbrowser">
+            vBrowser
+          </a>
+          <div id="navbarNav" class="offcanvas offcanvas-end">
+            <div class="offcanvas-header border-bottom">
+              <h5 class="offcanvas-title">Menu</h5>
+              <button type="button" class="btn-close btn-close-white" data-bs-dismiss="offcanvas" aria-label="Close"></button>
+            </div>
+            <div class="offcanvas-body">
+              <ul class="navbar-nav me-auto mb-2 mb-lg-0">   
+                {% if user.is_authenticated %}             
+                <li class="nav-item">
+                  <a href="{% url 'session' %}" class="nav-link">Session</a>
+                </li>
+                
+                <li class="nav-item dropdown">
+                  <a href="#" class="nav-link dropdown-toggle" data-bs-toggle="dropdown">Account</a>
+                  <ul class="dropdown-menu dropdown-menu-dark">
+                    <li><a href="{% url 'account_settings' %}" class="dropdown-item">Account Details</a></li>
+                    <li><a href="{% url 'account_security' %}" class="dropdown-item">Security</a></li>
+                    <li><a href="{% url 'account_api' %}" class="dropdown-item">API Key</a></li>
+                  </ul>
+                </li>
+                {% endif %}
+                <li class="nav-item">
+                  <a href="{% url 'docs_session' %}" class="nav-link">Docs</a>
+                </li>
+                {% if user.is_authenticated %}
+                <li class="nav-item">
+                    <a href="{% url 'account_logout' %}" class="nav-link">Logout</a>
+                </li>
+                {% else %}
+                <li class="nav-item">
+                    <a href="{% url 'account_login' %}" class="nav-link">Login</a>
+                </li>
+                <li class="nav-item">
+                    <a href="{% url 'account_signup' %}" class="nav-link">Sign Up</a>
+                </li>
+                {% endif %}
+                
+              </ul>
+            </div>   
+
+          </div>
+          <div class="pe-lg-1 ms-auto me-4" data-bs-theme="light">
+            <div class="form-check form-switch mode-switch" data-bs-toggle="mode">
+              <input type="checkbox" class="form-check-input" id="theme-mode">
+              <label class="form-check-label d-none d-sm-block text-black" for="theme-mode">Light</label>
+              <label class="form-check-label d-none d-sm-block text-black" for="theme-mode">Dark</label>
+            </div>
+          </div>
+          <button type="button" class="navbar-toggler" data-bs-toggle="offcanvas" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+            <span class="navbar-toggler-icon"></span>
+          </button>
+      </header>

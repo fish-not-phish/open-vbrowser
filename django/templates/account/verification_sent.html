@@ -1,0 +1,30 @@
+{% extends "main/main.html" %}
+{% block title %} vBrowser - Account{% endblock %}
+{% load static %}
+{% load i18n %}
+{% load account %}
+{% block styles %}
+{% endblock %}
+{% block content %}
+
+{% include 'main/nav2.html' %}
+
+
+<!-- Page content -->
+<section class="position-relative h-100 pt-5 pb-4">
+    
+    <!-- Password Reset Message -->
+    <div class="container d-flex flex-wrap justify-content-center justify-content-xl-start h-100 pt-5">
+      <div class="w-100 align-self-end pt-1 pt-md-4 pb-4" style="max-width: 526px;">
+        <h1 class="h3 mb-3 fw-normal">{% trans "Verify Your Email Address" %}</h1>
+        <p>{% blocktrans %}We have sent an email to you for verification. Follow the link provided to finalize the signup process. If you do not see the verification email in your main inbox, check your spam folder. Please contact us if you do not receive the verification email within a few minutes.{% endblocktrans %}</p>
+      </div>
+    </div>
+    
+    <!-- Background image for larger screens -->
+    <div class="position-absolute top-0 end-0 w-50 h-100 bg-position-center bg-repeat-0 bg-size-cover d-none d-xl-block"
+         style="background-image: url('{% static 'assets/img/account/signin-bg.jpg' %}');"></div>
+  </section>
+
+
+{% endblock %}

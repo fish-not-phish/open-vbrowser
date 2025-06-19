@@ -1,0 +1,11 @@
+#!/bin/bash
+
+/opt/Telegram/Telegram \
+  --no-sandbox \
+   "$@" > /dev/null 2>&1
+
+PROCESS_NAME="Telegram"
+
+
+
+

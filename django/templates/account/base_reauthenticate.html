@@ -1,0 +1,39 @@
+{% extends "main/main.html" %}
+{% block title %} vBrowser - Login{% endblock %}
+{% load static %}
+{% load i18n %}
+{% load account socialaccount %}
+{% block styles %}
+{% endblock %}
+{% block content %}
+
+{% include 'main/nav2.html' %}
+
+<!-- Page content -->
+<section class="position-relative h-100 pt-5 pb-4">
+    <!-- Confirm Access form -->
+    <div class="container d-flex flex-wrap justify-content-center justify-content-xl-start h-100 pt-5">
+      <div class="w-100 align-self-end pt-1 pt-md-4 pb-4" style="max-width: 526px;">
+        <h1 class="text-center text-xl-start">{% trans "Confirm Access" %}</h1>
+        <p class="text-center text-xl-start pb-3 mb-3">
+          {% blocktranslate %}Please reauthenticate to safeguard your account.{% endblocktranslate %}
+        </p>
+        {% block reauthenticate_content %}{% endblock %}
+        {% if reauthentication_alternatives %}
+            <hr>
+            <h2 class="text-center text-xl-start">{% translate "Alternative options" %}</h2>
+            <ul>
+                {% for alt in reauthentication_alternatives %}
+                    <li>
+                        <a href="{{ alt.url }}">{{ alt.description }}</a>
+                    </li>
+                {% endfor %}
+            </ul>
+        {% endif %}
+      </div>
+    </div>
+    <!-- Background image for larger screens -->
+    <div class="position-absolute top-0 end-0 w-50 h-100 bg-position-center bg-repeat-0 bg-size-cover d-none d-xl-block" style="background-image: url('{% static 'assets/img/account/signin-bg.jpg' %}');"></div>
+</section>
+
+{% endblock %}

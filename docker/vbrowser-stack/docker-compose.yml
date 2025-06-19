@@ -1,0 +1,85 @@
+services:
+  mysql:
+    image: mysql:8.0
+    container_name: mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: rootpass
+      MYSQL_DATABASE: "${DB_NAME:-}"
+      MYSQL_USER: "${DB_USER:-}"
+      MYSQL_PASSWORD: "${DB_PASSWORD:-}" 
+    volumes:
+      - mysql_data:/var/lib/mysql
+    ports:
+      - "3306:3306"
+
+  redis:
+    image: redis:7-alpine
+    container_name: redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+  vbrowser:
+    image: vbrowser:latest
+    container_name: vbrowser
+    restart: unless-stopped
+    volumes:
+      - ../../docker/containers-update/vbrowsers:/app/vbrowsers:ro
+    depends_on:
+      - mysql
+      - redis
+    
+    ports:
+      - "8444:80"
+
+    environment:
+      SECRET_KEY: "${SECRET_KEY:-}"
+      DEBUG: "${DEBUG:-}" 
+      CUSTOM_DOMAIN: "${CUSTOM_DOMAIN:-}"
+      DJANGO_SUPERUSER_USERNAME: "${DJANGO_SUPERUSER_USERNAME:-}"
+      DJANGO_SUPERUSER_EMAIL: "${DJANGO_SUPERUSER_EMAIL:-}"
+      DJANGO_SUPERUSER_PASSWORD: "${DJANGO_SUPERUSER_PASSWORD:-}"
+      AWS_SECRET_ACCESS_KEY: "${AWS_SECRET_ACCESS_KEY:-}" 
+      AWS_ACCESS_KEY_ID: "${AWS_ACCESS_KEY_ID:-}"
+      AWS_DEFAULT_REGION: "${AWS_DEFAULT_REGION:-}"
+      ALLOWED_HOSTS: "${ALLOWED_HOSTS:-}" 
+      LOGGER_ENABLED: "${LOGGER_ENABLED:-}"
+      DEFAULT_IDLE_THRESHOLD: "${DEFAULT_IDLE_THRESHOLD:-}"
+      SUBNET_ID: "${SUBNET_ID:-}"
+      SECURITY_GROUP_ID: "${SECURITY_GROUP_ID:-}"
+      ECR_REGISTRY: "${ECR_REGISTRY:-}"
+
+      # MySQL
+      DB_NAME: "${DB_NAME:-}"
+      DB_USER: "${DB_USER:-}"
+      DB_PASSWORD: "${DB_PASSWORD:-}"
+      DB_HOST: "${DB_HOST:-}"
+      DB_PORT: "${DB_PORT:-}"
+
+      # Redis
+      REDIS_URL: "${REDIS_URL:-}"
+
+    # Only use the below labels for Traefik Reverse Proxy 
+    # labels:
+    #   - "traefik.enable=true"
+
+    #   - "traefik.http.routers.django-main.rule=Host(`domain.tld`)"
+    #   - "traefik.http.routers.django-main.entrypoints=websecure"
+    #   - "traefik.http.routers.django-main.tls=true"
+    #   - "traefik.http.routers.django-main.tls.certresolver=cloudflare"
+    #   - "traefik.http.routers.django-main.service=django-service"
+
+    #   - "traefik.http.routers.django-api.rule=Host(`api.domain.tld`)"
+    #   - "traefik.http.routers.django-api.entrypoints=websecure"
+    #   - "traefik.http.routers.django-api.tls=true"
+    #   - "traefik.http.routers.django-api.tls.certresolver=cloudflare"
+    #   - "traefik.http.routers.django-api.service=django-service"
+
+    #   - "traefik.http.services.django-service.loadbalancer.server.port=8444"
+
+volumes:
+  mysql_data:
+
+    
+
+

@@ -1,0 +1,65 @@
+{% extends "main/main.html" %}
+{% block title %} vBrowser - Login{% endblock %}
+{% load static %}
+{% load i18n %}
+{% load account socialaccount %}
+{% block styles %}
+{% endblock %}
+{% block content %}
+
+{% include 'main/nav2.html' %}
+
+<!-- Page content -->
+<section class="position-relative h-100 pt-5 pb-4">
+
+    <!-- Sign in form -->
+    <div class="container d-flex flex-wrap justify-content-center justify-content-xl-start h-100 pt-5">
+      <div class="w-100 align-self-end pt-1 pt-md-4 pb-4" style="max-width: 526px;">
+        <h1 class="text-center text-xl-start">Welcome Back</h1>
+        <p class="text-center text-xl-start pb-3 mb-3">Don’t have an account yet? <a href="{% url 'account_signup' %}">Register here.</a></p>
+        <form action="{% url 'account_login' %}" method="POST" class="needs-validation mb-2">
+            {% csrf_token %}
+
+            <!-- Error handling -->
+            {% if form.errors %}
+                {% for field in form %}
+                    {% for error in field.errors %}
+                        <div class="alert alert-error">
+                            <strong>{{ error|escape }}</strong>
+                        </div>
+                    {% endfor %}
+                {% endfor %}
+                {% for error in form.non_field_errors %}
+                    <div class="alert alert-error">
+                        <strong>{{ error|escape }}</strong>
+                    </div>
+                {% endfor %}
+            {% endif %}
+            
+          <div class="position-relative mb-4">
+            <label for="id_login" class="form-label fs-base">Email</label>
+            <input type="email" name="login" id="id_login" class="form-control form-control-lg" required>
+            <div class="invalid-feedback position-absolute start-0 top-100">Please enter a valid email address!</div>
+          </div>
+          <div class="mb-4">
+            <label for="id_password" class="form-label fs-base">Password</label>
+            <div class="password-toggle">
+              <input type="password" name="password" id="id_password" class="form-control form-control-lg" required>
+              <label class="password-toggle-btn" aria-label="Show/hide password">
+                <input class="password-toggle-check" type="checkbox">
+                <span class="password-toggle-indicator"></span>
+              </label>
+              <div class="invalid-feedback position-absolute start-0 top-100">Please enter your password!</div>
+            </div>
+          </div>
+          <button type="submit" class="btn btn-primary shadow-primary btn-lg w-100">Sign in</button>
+        </form>
+        
+      </div>
+    </div>
+    
+    <!-- Background -->
+    <div class="position-absolute top-0 end-0 w-50 h-100 bg-position-center bg-repeat-0 bg-size-cover d-none d-xl-block" style="background-image: url('{% static 'assets/img/account/signin-bg.jpg' %}');"></div>
+  </section>
+
+{% endblock %}

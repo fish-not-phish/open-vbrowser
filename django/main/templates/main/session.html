@@ -1,0 +1,318 @@
+{% extends "main/main.html" %}
+{% block title %} vBrowser - Session{% endblock %}
+{% load static %}
+{% load custom_filters %}
+{% block styles %}
+{% endblock %}
+{% block content %}
+
+{% include 'main/nav2.html' %}
+<style>
+    .btn.btn-outline-dark {
+    width:36rem;
+    color: white !important;
+    background-color: #CF7287;
+    border: 1px solid #CF7287;
+    transition: background-color 0.3s, color 0.3s;
+    margin-left: auto;
+    margin-right: auto;
+    display: block;
+    margin-top: 15px !important;
+}
+.btn.btn-outline-dark:hover {
+    color: white !important;
+    background-color: #9c5667;
+    border: 1px solid #9c5667;
+    transition: background-color 0.3s, color 0.3s;
+}
+.timer {
+        font-size: 20px;
+        color: #CF7287;
+        text-align: center;
+        display: block;
+        margin-left: auto;
+        margin-right: auto;
+    }
+    .alert strong {
+        color: black;
+    }
+    .iframe-content {
+        margin-top: 76px;
+        display: flex;
+        flex: 1;
+    }
+
+    iframe {
+      width: calc(100% - 80px);
+      border: none;
+    }
+
+    .sidebar {
+      width: 80px;
+      background-color: #232629;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding-top: 1rem;
+      box-shadow: -2px 0 5px rgba(0, 0, 0, 0.1);
+    }
+
+    .sidebar button {
+      width: 50px;
+      height: 50px;
+      margin-bottom: 1rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border: none;
+      background-color: #CF7287;
+      transition: background-color 0.3s, color 0.3s;
+      color: white;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+    
+
+    .sidebar button:hover {
+      background-color: #9c5667;
+      transition: background-color 0.3s, color 0.3s;
+    }
+
+    .sidebar button .bi {
+      color: white !important;
+      font-size: 1.5em;
+    }
+
+    .tooltip-inner {
+      max-width: 200px;
+    }
+
+    .timer {
+      padding: 10px;
+      font-size: 16px;
+      text-align: center;
+      margin-bottom: 1rem;
+      color: black;
+    }
+
+    #session-timer {
+        color:white;
+    }
+
+    .btn-others {
+        color: white !important;
+        background-color: #CF7287;
+        border: 1px solid #CF7287;
+        transition: background-color 0.3s, color 0.3s;
+      }
+
+      .btn-others:hover {
+        color: white !important;
+        background-color: #9c5667;
+        border: 1px solid #9c5667;
+        transition: background-color 0.3s, color 0.3s;
+      }
+
+      #download-button {
+        width: 150px !important;
+      }
+      .bx-cloud-download,
+      .bx-trash {
+        font-size: 1.5em !important;
+      }
+
+</style>
+
+<div class="iframe-content">
+    <iframe src="https://{{ custom_domain }}/proxy?session_token={{ session_token }}" id="contentFrame" allow="autoplay; microphone; camera; clipboard-read; clipboard-write; fullscreen"></iframe>
+    <div class="sidebar">
+        <div class="timer">
+            <span id="session-timer">00:00:00</span>
+        </div>
+
+        <button class="delete-session-btn" data-uuid="{{ container_uuid }}" data-bs-toggle="tooltip" data-bs-placement="left" title="Delete Session"><i class='bx bx-trash'></i></button>
+
+    </div>
+</div>
+
+
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+
+<script>
+    function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i].trim();
+            if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                break;
+            }
+        }
+    }
+    return cookieValue;
+}
+
+const csrftoken = getCookie('csrftoken');
+</script>
+<script>
+    let pingFailed = false;
+    const container = '{{container_uuid}}';
+    function handlePingFailure() {
+        if (!pingFailed) {
+            pingFailed = true;
+            window.location.href = `{% url 'start' %}?session_summary=${container}`;
+        }
+    }
+
+    setInterval(function() {
+        $.get('/ping/' + container)
+            .fail(function() {
+                handlePingFailure();
+            });
+    }, 10 * 1000);
+  </script>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const startTimeStr = "{{ session_duration|default:'' }}";
+        const timerElement = document.getElementById('session-timer');
+
+        if (!startTimeStr) {
+            // Handle the case where start_time is not set
+            timerElement.textContent = "00:00:00";
+            return;
+        }
+
+        // Parse the start_time string into a Date object
+        const startTime = new Date(startTimeStr);
+
+        // Function to update the timer
+        function updateTimer() {
+            const now = new Date();
+            let elapsedMilliseconds = now - startTime;
+
+            if (elapsedMilliseconds < 0) {
+                // If the start_time is in the future, set elapsed to zero
+                elapsedMilliseconds = 0;
+            }
+
+            // Convert milliseconds to total seconds
+            const totalElapsed = Math.floor(elapsedMilliseconds / 1000);
+
+            // Calculate hours, minutes, and seconds
+            const hours = String(Math.floor(totalElapsed / 3600)).padStart(2, '0');
+            const minutes = String(Math.floor((totalElapsed % 3600) / 60)).padStart(2, '0');
+            const seconds = String(totalElapsed % 60).padStart(2, '0');
+
+            // Update the timer element with the formatted time
+            timerElement.textContent = `${hours}:${minutes}:${seconds}`;
+        }
+
+        // Initial call to display the timer immediately
+        updateTimer();
+
+        // Update the timer every second
+        setInterval(updateTimer, 1000);
+    });
+</script>
+
+<script>
+
+    $(document).ready(function() {
+        const container = '{{container_uuid}}';
+        $('.delete-session-btn').click(function() {
+            var button = $(this);
+            var containerUuid = button.data('uuid');
+            var csrfToken = csrftoken;
+
+            $.ajax({
+                url: `{% url 'close_session' 'dummy-uuid' %}`.replace('dummy-uuid', containerUuid),
+                type: 'POST',
+                data: {
+                    'csrfmiddlewaretoken': csrfToken
+                },
+                success: function(response) {
+                    if (response.status === 'removed') {
+                        $('#card-' + containerUuid).remove();
+                        window.location.href = `{% url 'start' %}?session_summary=${container}`;
+                    } else {
+                        alert(response.message || 'Error removing session');
+                    }
+                },
+                error: function(xhr, status, error) {
+                    alert('Error: ' + error);
+                }
+            });
+        });
+    });
+</script>
+<script>
+    function closeSession() {
+        // Function to get the CSRF token from cookies
+        function getCookie(name) {
+            let cookieValue = null;
+            if (document.cookie && document.cookie !== '') {
+                const cookies = document.cookie.split(';');
+                for (let i = 0; i < cookies.length; i++) {
+                    const cookie = cookies[i].trim();
+                    if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                        break;
+                    }
+                }
+            }
+            return cookieValue;
+        }
+
+        const csrftoken = getCookie('csrftoken');
+
+        $(document).ready(function() {
+            const container = '{{container_uuid}}';
+            $('.delete-session-btn').click(function() {
+                var button = $(this);
+                var containerUuid = button.data('uuid');
+                var csrfToken = csrftoken;
+
+                $.ajax({
+                    url: `{% url 'close_session' 'dummy-uuid' %}`.replace('dummy-uuid', containerUuid),
+                    type: 'POST',
+                    data: {
+                        'csrfmiddlewaretoken': csrfToken
+                    },
+                    success: function(response) {
+                        if (response.status === 'removed') {
+                            $('#card-' + containerUuid).remove();
+                            window.location.href = `{% url 'start' %}?session_summary=${container}`;
+                        } else {
+                            alert(response.message || 'Error removing session');
+                        }
+                    },
+                    error: function(xhr, status, error) {
+                        alert('Error: ' + error);
+                    }
+                });
+            });
+        });
+    }
+
+</script>
+<script>
+    function resizeIframe() {
+      const navbarHeight = document.querySelector('.navbar').offsetHeight;
+      const iframe = document.getElementById('contentFrame');
+      iframe.style.height = window.innerHeight - navbarHeight + 'px';
+    }
+
+    window.addEventListener('resize', resizeIframe);
+    window.addEventListener('load', resizeIframe);
+
+    document.addEventListener('DOMContentLoaded', function () {
+      const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'))
+      const tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+        return new bootstrap.Tooltip(tooltipTriggerEl)
+      })
+    });
+  </script>
+{% endblock %}

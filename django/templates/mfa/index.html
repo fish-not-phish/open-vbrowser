@@ -1,0 +1,58 @@
+{% extends "main/main.html" %}
+{% block title %} vBrowser - Two-Factor Authentication{% endblock %}
+{% load static %}
+{% load i18n %}
+{% load account socialaccount %}
+{% block styles %}{% endblock %}
+{% block content %}
+
+{% include 'main/nav2.html' %}
+
+<!-- Page content -->
+<section class="position-relative h-100 pt-5 pb-4">
+  <!-- Two-Factor Authentication Form -->
+  <div class="container d-flex flex-wrap justify-content-center justify-content-xl-start h-100 pt-5">
+    <div class="w-100 align-self-end pt-1 pt-md-4 pb-4" style="max-width: 526px;">
+      <h1 class="text-center text-xl-start">{% trans "Two-Factor Authentication" %}</h1>
+      <p class="text-center text-xl-start pb-3 mb-3">
+        {% trans "Please manage your authenticator app and recovery codes below." %}
+      </p>
+      {% if authenticators.totp %}
+        <p class="text-center text-xl-start">{% trans "Authentication using an authenticator app is active." %}</p>
+        <a href="{% url 'mfa_deactivate_totp' %}" class="btn btn-danger shadow-primary btn-lg w-100 mt-3">
+          {% trans "Deactivate" %}
+        </a>
+      {% else %}
+        <a href="{% url 'mfa_activate_totp' %}" class="btn btn-primary shadow-primary btn-lg w-100 mt-3">
+          {% trans "Activate" %}
+        </a>
+      {% endif %}
+      {% if authenticators.recovery_codes %}
+        <p class="text-center text-xl-start mt-3">
+          {% blocktranslate count unused_count=unused_count %}There is {{ unused_count }} out of {{ total_count }} recovery code available.{% plural %}There are {{ unused_count }} out of {{ total_count }} recovery codes available.{% endblocktranslate %}
+        </p>
+        <div class="d-flex flex-wrap gap-2 justify-content-center">
+          {% if unused_count > 0 %}
+            <a href="{% url 'mfa_view_recovery_codes' %}" class="btn btn-secondary shadow-primary btn-lg">
+              {% trans "View" %}
+            </a>
+            <a href="{% url 'mfa_download_recovery_codes' %}" class="btn btn-secondary shadow-primary btn-lg">
+              {% trans "Download" %}
+            </a>
+          {% endif %}
+          <a href="{% url 'mfa_generate_recovery_codes' %}" class="btn btn-secondary shadow-primary btn-lg">
+            {% trans "Generate" %}
+          </a>
+        </div>
+      {% else %}
+        <p class="text-center text-xl-start mt-3">{% trans "No recovery codes set up." %}</p>
+      {% endif %}
+    </div>
+  </div>
+  
+  <!-- Background -->
+  <div class="position-absolute top-0 end-0 w-50 h-100 bg-position-center bg-repeat-0 bg-size-cover d-none d-xl-block"
+       style="background-image: url('{% static 'assets/img/account/signin-bg.jpg' %}');"></div>
+</section>
+
+{% endblock %}

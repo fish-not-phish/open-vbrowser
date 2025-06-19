@@ -1,0 +1,28 @@
+#!/bin/bash
+
+BIN=/usr/bin/opera-real
+LOGFILE="/tmp/opera.log"
+LANG=$(echo $LC_ALL | sed 's/\.UTF-8//g' | sed 's/_/-/g')
+LANG_SHORT=$(echo $LANG | awk -F'-' '{print $1}')
+
+if [ -f /usr/lib/x86_64-linux-gnu/opera/localization/${LANG_SHORT}.pak ]; then
+  LANG_CLI="--lang=${LANG_SHORT}"
+fi
+if [ -f /usr/lib/x86_64-linux-gnu/opera/localization/${LANG}.pak ]; then
+  LANG_CLI="--lang=${LANG}"
+fi
+
+/usr/bin/opera-real \
+  --ignore-gpu-blocklist \
+  --no-first-run \
+  --password-store=basic \
+  --simulate-outdated-no-au='Tue, 31 Dec 2099 23:59:59 GMT' \
+  --start-maximized \
+  --disable-dev-shm-usage \
+  --user-data-dir \
+  --no-sandbox \
+  $LANG_CLI \ 
+  "$@" $FF_OPEN_URL
+
+PROCESS_NAME="opera-real"
+

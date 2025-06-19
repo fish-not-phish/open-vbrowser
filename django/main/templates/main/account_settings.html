@@ -1,0 +1,148 @@
+{% extends "main/main.html" %}
+{% block title %} vBrowser - Account{% endblock %}
+{% load static %}
+{% load i18n %}
+{% block styles %}
+{% endblock %}
+{% block content %}
+
+{% include 'main/nav2.html' %}
+
+<section class="container mt-lg-4 pt-5">
+    <div class="row">
+      <!-- Sidebar -->
+      <aside class="col-lg-3 col-md-4 border-end pb-5 mt-n5">
+        <div class="position-sticky top-0">
+          <div class="text-center pt-5">
+            <div class="d-table position-relative mx-auto mt-2 mt-lg-4 pt-5 mb-3">
+              {% if user.profile_image %}
+              <img src="{% static 'images/user.png' %}" class="d-block rounded-circle" width="120" alt="{{ user.get_full_name }}">
+              {% else %}
+              <img src="{% static 'images/user.png' %}" class="d-block rounded-circle" width="120" alt="{{ user.get_full_name }}">
+              {% endif %}
+            </div>
+            <h2 class="h5 mb-1">{{ user.first_name }} {{ user.last_name }}</h2>
+            <p class="mb-3 pb-3">{{ user.email }}</p>
+            <button type="button" class="btn btn-secondary w-100 d-md-none mt-n2 mb-3" data-bs-toggle="collapse" data-bs-target="#account-menu">
+              <i class="bx bxs-user-detail fs-xl me-2"></i>
+              Account menu
+              <i class="bx bx-chevron-down fs-lg ms-1"></i>
+            </button>
+            <div id="account-menu" class="list-group list-group-flush collapse d-md-block">
+              <a href="{% url 'account_settings' %}" class="list-group-item list-group-item-action d-flex align-items-center active">
+                <i class="bx bx-cog fs-xl opacity-60 me-2"></i>
+                Account Details
+              </a>
+              <a href="{% url 'account_security' %}" class="list-group-item list-group-item-action d-flex align-items-center">
+                <i class="bx bx-lock-alt fs-xl opacity-60 me-2"></i>
+                Security
+              </a>
+              <a href="{% url 'account_api' %}" class="list-group-item list-group-item-action d-flex align-items-center">
+                <i class='bx bxs-key fs-xl opacity-60 me-2'></i>
+                API Key
+              </a>
+            </div>
+          </div>
+        </div>
+      </aside>
+
+      <!-- Account details form -->
+      <div class="col-md-8 offset-lg-1 pb-5 mb-2 mb-lg-4 pt-md-5 mt-n3 mt-md-0">
+        <div class="ps-md-3 ps-lg-0 mt-md-2 py-md-4">
+          <h1 class="h2 pt-xl-1 pb-3">Account Details</h1>
+          <h2 class="h5 text-primary mb-4">Basic info</h2>
+          <form method="post" action="{% url 'account_settings' %}" class="needs-validation border-bottom pb-3 pb-lg-4" novalidate>
+            {% csrf_token %}
+            <div class="row pb-2">
+              <div class="col-sm-6 mb-4">
+                <label for="first_name" class="form-label fs-base">First name</label>
+                <input type="text" id="first_name" name="first_name" class="form-control form-control-lg" value="{{ user.first_name }}" required>
+                <div class="invalid-feedback">Please enter your first name!</div>
+              </div>
+              <div class="col-sm-6 mb-4">
+                <label for="last_name" class="form-label fs-base">Last name</label>
+                <input type="text" id="last_name" name="last_name" class="form-control form-control-lg" value="{{ user.last_name }}" required>
+                <div class="invalid-feedback">Please enter your last name!</div>
+              </div>
+              <div class="col-sm-6 mb-4">
+                <label for="email" class="form-label fs-base">Email address</label>
+                <input type="email" id="email" class="form-control form-control-lg" value="{{ user.email }}" readonly>
+                <div class="invalid-feedback">Please provide a valid email address!</div>
+              </div>
+              <div class="col-sm-6 mb-4">
+                <label for="phone" class="form-label fs-base">Phone <small class="text-muted"></small></label>
+                <input type="text" id="phone" name="phone" class="form-control form-control-lg" value="{{ extendprofile.phone }}">
+              </div>
+            </div>
+            <div class="d-flex mb-3">
+              <button type="reset" class="btn btn-secondary me-3">Cancel</button>
+              <button type="submit" class="btn btn-primary">Save changes</button>
+            </div>
+          </form>
+          {% if not verified %}
+      <div class="container unverified">
+        <p>{% trans 'The following email addresses are associated with your account:' %}</p>
+        {% url 'account_email' as email_url %}
+        <form method="post" action="{{ email_url }}" class="form">
+            {% csrf_token %}
+            <div class="list-group mb-3">
+                {% for emailaddress in emailaddresses %}
+                    <div class="list-group-item">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div class="email-adr">
+                                {{ emailaddress.email }}
+                            </div>
+                            <div>
+                                {% if emailaddress.verified %}
+                                    <span class="badge bg-success">{% trans "Verified" %}</span>
+                                {% else %}
+                                    <span class="badge bg-warning">{% trans "Unverified" %}</span>
+                                    <input type="hidden" name="email" value="{{ emailaddress.email }}">
+                                    <button type="submit" name="action_send" value="{{ emailaddress.email }}" class="btn btn-outline-dark ms-3">{% trans "Re-send Verification" %}</button>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+        </form>
+    </div>
+    {% endif %}
+          {% if session_id %}
+    {% if bundle_type %}
+    <div class="alert alert-info">
+        <strong>Order Processed:</strong>
+        <p>Bundle Purchased: {{ bundle_type }}</p>
+    </div>
+    {% else %}
+    <div class="alert alert-info">
+        <strong>Order Processed:</strong>
+        <p>Subscription Changed: {{ user.extendprofile.subscription_tier }}</p>
+    </div>
+    {% endif %}
+    {% endif %}
+    {% if overtier == "True" %}
+    <div class="alert alert-warning">
+        <strong>Over Daily Tier</strong>
+        <p>You have consumed the daily quota for your plan tier.</p>
+    </div>
+    {% endif %}
+    {% if concurrent == "True" %}
+    <div class="alert alert-warning">
+        <strong>Too Many Concurrent Sessions</strong>
+        <p>You have the max amount of concurrent sessions open for your plan type. Please close a current session to create a new session.</p>
+    </div>
+    {% endif %}
+          {% if messages %}
+            <div class="alert alert-info">
+              {% for message in messages %}
+                <p>{{ message }}</p>
+              {% endfor %}
+            </div>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </section>
+
+{% endblock %}

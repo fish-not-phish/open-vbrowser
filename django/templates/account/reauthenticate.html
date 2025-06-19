@@ -1,0 +1,68 @@
+{% extends "main/main.html" %}
+{% block title %} vBrowser - Account{% endblock %}
+{% load static %}
+{% load i18n %}
+{% load account %}
+{% block styles %}
+{% endblock %}
+{% block content %}
+
+{% include 'main/nav2.html' %}
+
+<style>
+    #particles-js {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        z-index: -1;
+    }
+    form {
+        margin-top: 135px !important;
+    }
+    .btn-primary {
+        background-color: #CF7287;
+        border-color: #CF7287;
+        color: white;
+    }
+
+    .btn-primary:hover {
+        background-color: #b85c6e;
+        border-color: #b85c6e;
+    }
+</style>
+
+<!-- Page content -->
+<section class="position-relative h-100 pt-5 pb-4">
+
+  
+    <!-- Reauthentication form -->
+    <div class="container d-flex flex-wrap justify-content-center justify-content-xl-start h-100 pt-5">
+      <div class="w-100 align-self-end pt-1 pt-md-4 pb-4" style="max-width: 526px;">
+        <h1 class="text-center text-xl-start">{% blocktranslate %}Reauthenticate{% endblocktranslate %}</h1>
+        <p class="text-center text-xl-start pb-3 mb-3">
+          {% blocktranslate %}Enter your password to continue:{% endblocktranslate %}
+        </p>
+        <form action="{% url 'account_reauthenticate' %}" method="POST" class="needs-validation mb-2">
+          {% csrf_token %}
+          {% if redirect_field_value %}
+            <input type="hidden" name="{{ redirect_field_name }}" value="{{ redirect_field_value }}">
+          {% endif %}
+          <div class="mb-4">
+            <label for="id_password" class="form-label fs-base">{% trans "Password" %}</label>
+            <input name="password" type="password" id="id_password" class="form-control form-control-lg" placeholder="{% trans 'Password' %}" required>
+            <div class="invalid-feedback position-absolute start-0 top-100">Please enter your password!</div>
+          </div>
+          <button type="submit" class="btn btn-primary shadow-primary btn-lg w-100 mt-3">
+            {% trans "Confirm" %}
+          </button>
+        </form>
+      </div>
+    </div>
+    
+    <!-- Background image -->
+    <div class="position-absolute top-0 end-0 w-50 h-100 bg-position-center bg-repeat-0 bg-size-cover d-none d-xl-block"
+         style="background-image: url('{% static 'assets/img/account/signin-bg.jpg' %}');"></div>
+  </section>
+{% endblock %}

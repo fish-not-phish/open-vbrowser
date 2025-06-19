@@ -1,0 +1,15 @@
+#!/bin/bash
+
+firefox \
+  --start-maximized \
+  --no-first-run \
+  --password-store=basic \
+  --simulate-outdated-no-au='Tue, 31 Dec 2099 23:59:59 GMT' \
+  --start-maximized \
+  --user-data-dir \
+  --disable-dev-shm-usage \
+  -url $FF_OPEN_URL \
+   "$@"  > /dev/null 2>&1
+
+PROCESS_NAME="firefox"
+

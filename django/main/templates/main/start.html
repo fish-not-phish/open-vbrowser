@@ -1,0 +1,453 @@
+{% extends "main/main.html" %}
+{% block title %} vBrowser - Start Session{% endblock %}
+{% load static %}
+{% load custom_filters %}
+{% block styles %}
+{% endblock %}
+{% block content %}
+
+<style>
+  .centered-form-items {
+      display: block;
+      margin: auto;
+      width: 50%;
+      text-align: center;
+      margin-top: 20%;
+  }
+  .form-control-lg {
+      display: block;
+      margin: auto;
+      margin-bottom: 45vh;
+  }
+  .btn {
+      color: white;
+      border-color: white;
+      margin-bottom: 45px;
+  }
+
+  .start-card {
+      margin-top: 75px;
+      box-shadow: 0px 10px 15px 12px rgba(0,0,0,0.1);
+      max-width: 600px;
+      margin-left: auto;
+      margin-right: auto;
+  }
+
+  .session-title {
+      padding: 15px;
+      text-align: center;
+      font-size: 2em;
+      font-weight: 300;
+  }
+
+  .session-bold {
+      color: black;
+      text-align: center;
+      font-weight: 700;
+  }
+
+  .session-input {
+      width: calc(100% - 40px); /* Full width minus the margins */
+      margin-left: 20px;
+      margin-right: 20px;
+      padding: 10px; /* Optional: Add some padding for better appearance */
+      box-sizing: border-box;
+      color: black;
+  }
+
+  .session-input::placeholder {
+      text-align: center; /* Center the placeholder text */
+  }
+
+  .bi-window-stack {
+      color: black;
+  }
+
+  .browser-card {
+      max-width: 95px;
+      max-height: 85px;
+  }
+
+  .browser-options {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      align-items: center;
+      gap: 10px; /* Adjust the spacing between cards as needed */
+  }
+
+  .browser-options .card {
+      flex: 1 1 calc(33.333% - 10px); /* Adjust percentage and spacing as needed */
+      margin-bottom: 10px;
+  }
+
+  .card-body {
+      text-align: center;
+  }
+
+  /* Responsive adjustments */
+  @media (max-width: 1200px) {
+      .browser-options .card {
+          flex: 1 1 calc(50% - 10px); /* Adjust percentage for smaller screens */
+      }
+  }
+
+  @media (max-width: 768px) {
+      .browser-options .card {
+          flex: 1 1 100%; /* Full width on small screens */
+      }
+  }
+
+  .browser-title {
+      margin-top: 25px;
+  }
+
+  .browser-img {
+      width: 55px !important;
+      height: 55px !important;
+      margin: auto;
+      padding-top: 5px;
+      padding-bottom: 5px;
+  }
+
+  .browser-name {
+      text-align: center;
+      color: black;
+  }
+
+  .browser-card:hover {
+      cursor: pointer;
+  }
+
+  .browser-card.selected {
+      border: 2px solid#CF7287;
+      transform: scale(1.05);
+      
+      background-color: rgba(0, 0, 0, 0.2);
+  }
+
+  .btn-pink {
+      color: #CF7287 !important;
+      background-color: transparent;
+      border: 1px solid #CF7287;
+      transition: background-color 0.3s, color 0.3s;
+      width: calc(100% - 40px);
+      margin-left: 20px;
+      margin-right: 20px;
+      display: block;
+  }
+
+  .btn-pink:hover {
+      color: white !important;
+      background-color: #CF7287;
+      border: 1px solid #CF7287; /* Ensure the border remains the same color */
+  }
+
+  .alert {
+      margin-top: 135px;
+      max-width: 600px;
+      margin-left: auto;
+      margin-right: auto;
+  }
+  .alert strong, .alert p {
+      color: black;
+  }
+  .browser-card.disabled {
+  opacity: 0.5;
+  pointer-events: none;
+}
+.disabled-text {
+  color: red;
+  font-size: 12px;
+}
+
+.recommend {
+margin-top: 0px !important;
+}
+
+.credit {
+position: fixed;
+right: 2rem;
+bottom: 2rem;
+color: white;
+}
+.credit a {
+color: inherit;
+}
+
+.body {
+position: relative;
+background-color: #fff;
+overflow: hidden;
+display: flex;
+justify-content: center;
+align-items: center;
+transition: background-color .1s;
+}
+
+/* Phone */
+.swipe-cont {
+position: relative;
+z-index: 2;
+width: 21rem;
+background-color: inherit;
+border-radius: 40px;
+display: flex;
+flex-direction: column;
+}
+
+.swipe {
+width: 40%;
+height: .25rem;
+background-color: black;
+opacity: .15;
+border-radius: 10px;
+margin: .5rem auto;
+}
+
+/* Middle */
+.content {
+display: flex;
+flex-direction: column;
+margin: auto;
+text-align: center;
+width: 70%;
+transform: translateY(5%);
+}
+
+.turbo,
+.standard { 
+margin-top: 12px;
+font-size: 90%;
+color: black;
+}
+
+.label, .toggle {
+height: 2.8rem;
+border-radius: 100px;
+}
+
+.label {
+width: 100%;
+background-color: rgba(0,0,0,.1);
+border-radius: 100px;
+position: relative;
+margin: 1.8rem 0 4rem 0; 
+cursor: pointer;
+}
+
+.toggle {
+position: absolute;
+width: 50%;
+background-color: #fff;
+box-shadow: 0 2px 15px rgba(0,0,0,.15);
+transition: transform .3s cubic-bezier(0.25, 0.46, 0.45, 0.94), background-color .3s;
+}
+
+.names {
+font-size: 90%;
+font-weight: bolder;
+width: 65%;
+margin-left: 9.5%;
+margin-top: .5%;
+position: absolute;
+display: flex;
+justify-content: space-between;
+user-select: none;
+}
+
+.turbo {
+opacity: .5;
+margin-left: 65px;
+}
+
+.mark {
+border-radius: 100px;
+background-color: black;
+width: 7%;
+margin: auto;
+position: relative;
+height: .25rem;
+}
+
+.mark::before,
+.mark::after {
+content: '';
+position: absolute;
+width: .25rem;
+height: 100%;
+opacity: .15;
+background-color: inherit;
+}
+
+.mark::before {
+left: -70%;
+}
+
+.mark::after {
+right: -70%;
+}
+
+/* -------- Switch Styles ------------*/
+#switch {
+  display: none;
+}
+
+.hidden-checkbox {
+  display: none;
+}
+
+/* Toggle: Only toggle-specific styles */
+#switch:checked + .app .toggle {
+transform: translateX(100%);
+background-color: #CF7287; /* Change toggle color when checked */
+}
+
+#switch:checked + .app .turbo {
+color: white;
+opacity: 1; 
+}
+
+#switch:checked + .app .standard {
+opacity: .5; 
+}
+
+#token-purchase {
+display: block; 
+width: 200px;
+margin: 5px auto; 
+text-align: center; 
+}
+
+</style>
+{% include 'main/nav2.html' %}
+<div class="container pt-4 pb-4">
+    {% if details_container != "None" %}
+    <div class="alert alert-info">
+        <strong>Session Summary:</strong>
+        <p>Browser Type: {{ details_container.type|capfirst }}</p>
+        <p>Session Duration: {{ details_container.start_time|duration:details_container.closed_at }}</p>
+    </div>
+    {% endif %}
+    {% if failed_text != "None" %}
+    <div class="alert alert-info">
+        <strong>{{failed_text}}</strong>
+    </div>
+    {% endif %}
+<div class="card start-card">
+    <h5 class="session-title"><i class="bi bi-window-stack"></i> Start a Session</h5>
+    <form method="post" id="startForm">
+        {% csrf_token %}
+
+        <input type="hidden" name="session_type" id="session-type" value="vStandard">
+        <input type="checkbox" id="switch" class="hidden-checkbox">
+  <div class="app">
+    <div class="body">
+      <div class="swipe-cont">
+        <div class="content">
+          <label for="switch" class="label">
+            <div class="toggle"></div>
+            <div class="names">
+              <p class="standard">vStandard</p>
+              <p class="turbo">vSpot</p>
+            </div>
+          </label>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="session-description">
+    <p class="session-bold" name="target_url">Enter a URL</p>
+</div>
+
+      <div id="session-description-2">
+        <p class="session-bold" name="target_url">Enter a URL</p>
+      </div>
+    <input id="session-input" class="session-input" type="text" name="session_input" placeholder="eg. vbrowser.io">
+    <p class="session-bold browser-title">Select an Application</p>
+    <div class="alert alert-secondary recommend text-center" role="alert">
+      vBrowser Recommends Mullvad Browser to view phishing pages and avoid bot detection.
+    </div>
+    <div class="browser-options">
+      {% for browser in enabled_browsers %}
+        <div class="card browser-card" data-browser="{{ browser }}">
+          <img class="browser-img"
+              src="{% static 'images/' %}{{ browser }}.png"
+              alt="{{ browser|capfirst }}">
+          <p class="browser-name">{{ browser|capfirst }}</p>
+        </div>
+      {% endfor %}
+    </div>
+    <input type="hidden" name="browser_choice" id="browser-choice">
+    <button id='session-create-btn' type="submit" class="btn btn-pink mt-3">Create Session</button>
+    <div class="alert alert-warning mt-3" role="alert">
+        By using vBrowser, you agree to comply with all applicable local, state, national, and international laws and regulations. Any illegal activity, including but not limited to hacking, fraud, and distribution of illegal content, is strictly prohibited and may result in immediate suspension of your account and reporting to the appropriate authorities. 
+        <br><br>
+        vBrowser is not responsible for any actions taken by users within the vBrowser environment. Users are solely responsible for their actions and any consequences arising from misuse. vBrowser reserves the right to monitor, review, and remove any content that violates our terms of service.
+        <br><br>
+        By creating a session, you acknowledge and agree to these terms. You also acknowledge and agree that you have read the documentation on how to operate vBrowser sessions.
+    </div>
+    </form>
+  </div>
+</div>
+
+<script>
+    document.addEventListener("DOMContentLoaded", function() {
+        const browserCards = document.querySelectorAll('.browser-card');
+        const browserChoiceInput = document.getElementById('browser-choice');
+        const sessionInput = document.getElementById('session-input');
+        const switchInput = document.getElementById('switch');
+        const sessionTypeInput = document.getElementById('session-type');
+        const submitBtn = document.getElementById('session-create-btn');
+
+        // Initialize UI based on initial toggle state and token balance
+        updateUI();
+
+        // Event listener for toggle switch
+        switchInput.addEventListener('change', function() {
+            updateUI();
+        });
+
+        function updateUI() {
+            const descriptionDiv = document.getElementById('session-description');
+            if (switchInput.checked) {
+                sessionTypeInput.value = 'vSpot';
+                descriptionDiv.innerHTML = `<p style="color:black; text-align:center;"><strong style="color:black;">vSpot utilizes the AWS ECS Fargate Spot instances for short sessions and may be reclaimed by AWS at any time, resulting in interruption. However, vSpot sessions have a small associated cost.</strong> </small></p>`;
+
+                document.querySelector('.browser-options').style.display = 'flex';
+                document.getElementById('session-create-btn').style.display = 'block';
+                document.getElementById('session-input').style.display = 'block';
+                document.querySelector('.browser-title').style.display = 'block';
+                document.querySelector('.recommend').style.display = 'block';
+                
+            } else {
+                sessionTypeInput.value = 'vStandard';
+                descriptionDiv.innerHTML = '<p style="color:black;text-align:center;">vStandard utilizes the AWS ECS Fargate instances for longstanding sessions.</p>';
+                document.querySelector('.browser-options').style.display = 'flex';
+                document.getElementById('session-create-btn').style.display = 'block';
+                document.getElementById('session-input').style.display = 'block';
+                document.querySelector('.browser-title').style.display = 'block';
+                document.querySelector('.recommend').style.display = 'block';
+            }
+        }
+
+        // Existing code for browser cards
+        browserCards.forEach(card => {
+            card.addEventListener('click', function() {
+                browserCards.forEach(card => card.classList.remove('selected'));
+                card.classList.add('selected');
+                const browser = card.getAttribute('data-browser');
+                browserChoiceInput.value = browser;
+
+                if ((browser === 'tor') || (browser === 'telegram') || (browser === 'postman') || (browser === 'remnux') || (browser === 'slack') || (browser === 'zoom') || (browser === 'discord') || (browser === 'terminal') || (browser === 'signal')) {
+                    sessionInput.disabled = true;
+                    sessionInput.value = '';
+                } else {
+                    sessionInput.disabled = false;
+                }
+            });
+        });
+    });
+</script>
+{% endblock %}

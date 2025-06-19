@@ -1,0 +1,261 @@
+{% extends "main/main.html" %}
+{% block title %} vBrowser - Docs{% endblock %}
+{% load static %}
+{% block styles %}
+<link rel="stylesheet" media="screen" href="{% static 'assets/vendor/boxicons/css/boxicons.min.css' %}">
+<link rel="stylesheet" media="screen" href="{% static 'assets/vendor/swiper/swiper-bundle.min.css' %}">
+<link rel="stylesheet" media="screen" href="{% static 'assets/vendor/prismjs/themes/prism.css' %}">
+<link rel="stylesheet" media="screen" href="{% static 'assets/vendor/prismjs/plugins/toolbar/prism-toolbar.css' %}">
+<link rel="stylesheet" media="screen" href="{% static 'assets/vendor/prismjs/plugins/line-numbers/prism-line-numbers.css' %}">
+<link rel="stylesheet" media="screen" href="{% static 'assets/vendor/lightgallery/css/lightgallery-bundle.min.css' %}">
+{% endblock %}
+{% block content %}
+
+<!-- Navbar -->
+<header class="header navbar navbar-expand bg-light border-bottom border-light shadow fixed-top" data-scroll-header>
+    <div class="container-fluid pe-lg-4">
+      <div class="d-flex align-items-center">
+        <a href="{% url 'session' %}" class="navbar-brand flex-shrink-0 py-1 py-lg-2">
+          <img src="{% static 'assets/img/solo-logo-vbrowser-transparent.png' %}" width="47" alt="vbrowser">
+          vBrowser
+        </a>
+        <span class="badge bg-warning">Docs</span>
+      </div>
+      <div class="d-flex align-items-center w-100">
+        <ul class="navbar-nav d-none d-lg-flex" style="padding-left: 11.75rem;">
+          {% if user.is_authenticated %} 
+          <li class="nav-item">
+            <a href="{% url 'session' %}" class="nav-link">
+              &nbsp;Session
+            </a>
+          </li>
+          <li class="nav-item dropdown">
+            <a href="#" class="nav-link dropdown-toggle" data-bs-toggle="dropdown">Account</a>
+            <ul class="dropdown-menu dropdown-menu-dark">
+              <li><a href="{% url 'account_settings' %}" class="dropdown-item">Account Details</a></li>
+              <li><a href="{% url 'account_security' %}" class="dropdown-item">Security</a></li>
+            </ul>
+          </li>          
+          <li class="nav-item">
+            <a href="{% url 'account_logout' %}" class="nav-link">
+              &nbsp;Logout
+            </a>
+          </li>
+          {% else %}
+          <li class="nav-item">
+            <a href="{% url 'account_login' %}" class="nav-link">
+              &nbsp;Login
+            </a>
+          </li>
+          <li class="nav-item">
+            <a href="{% url 'account_signup' %}" class="nav-link">
+              &nbsp;Sign Up
+            </a>
+          </li>
+          {% endif %}
+        </ul>
+        <button type="button" class="navbar-toggler d-block d-lg-none ms-auto me-4" data-bs-toggle="offcanvas" data-bs-target="#componentsNav" aria-controls="componentsNav" aria-label="Toggle navigation">
+          <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="form-check form-switch mode-switch pe-lg-1 ms-lg-auto" data-bs-toggle="mode">
+          <input type="checkbox" class="form-check-input" id="theme-mode">
+          <label class="form-check-label d-none d-sm-block d-lg-none d-xl-block" for="theme-mode">Light</label>
+          <label class="form-check-label d-none d-sm-block d-lg-none d-xl-block" for="theme-mode">Dark</label>
+        </div>
+      </div>
+    </div>
+  </header>
+
+
+  <!-- Main sidebar navigation -->
+  <aside data-bs-theme="dark">
+    <div id="componentsNav" class="offcanvas-lg offcanvas-start d-flex flex-column position-fixed top-0 start-0 vh-100 bg-dark border-end-lg" style="width: 21rem; z-index: 1045;">
+      <div class="offcanvas-header d-none d-lg-flex justify-content-start">
+        <a href="{% url 'session' %}" class="navbar-brand text-dark d-none d-lg-flex py-0">
+          <img src="{% static 'assets/img/solo-logo-vbrowser-transparent.png' %}" width="47" alt="vbrowser">
+          vBrowser
+        </a>
+        <span class="badge bg-warning d-none d-lg-inline-block">Docs</span>
+      </div>
+      <div class="offcanvas-header d-block d-lg-none border-bottom">
+        <div class="d-flex align-items-center justify-content-between mb-3">
+          <h5 class="d-lg-none mb-0">Menu</h5>
+          <button type="button" class="btn-close d-lg-none" data-bs-dismiss="offcanvas" data-bs-target="#componentsNav" aria-label="Close"></button>
+        </div>
+        <div class="list-group list-group-flush mx-n4">
+          {% if user.is_authenticated %} 
+          <a href="{% url 'session' %}" class="list-group-item list-group-item-action d-flex align-items-center border-0 py-2 px-4">
+            Session
+          </a>
+          <a href="{% url 'account_logout' %}" class="list-group-item list-group-item-action d-flex align-items-center border-0 py-2 px-4">
+            Logout
+          </a>
+          {% else %}
+          <a href="{% url 'account_login' %}" class="list-group-item list-group-item-action d-flex align-items-center border-0 py-2 px-4">
+            Login
+          </a>
+          <a href="{% url 'account_signup' %}" class="list-group-item list-group-item-action d-flex align-items-center border-0 py-2 px-4">
+            Sign Up
+          </a>
+          {% endif %}
+        </div>
+      </div>
+      <div class="offcanvas-body swiper scrollbar-hover overflow-hidden w-100 p-4" data-swiper-options='{
+        "direction": "vertical",
+        "slidesPerView": "auto",
+        "freeMode": true,
+        "scrollbar": {
+          "el": ".swiper-scrollbar"
+        },
+        "mousewheel": true
+      }'>
+        <div class="swiper-wrapper">
+          <div class="swiper-slide h-auto">
+            <h3 class="fs-lg">Documentation</h3>
+            <div class="list-group list-group-flush border-bottom pb-3 mb-4 mx-n4">
+              <a href="{% url 'docs_session' %}" class="list-group-item list-group-item-action border-0 py-2 px-4">Session</a>
+              <a href="{% url 'docs_clipboard' %}" class="list-group-item list-group-item-action border-0 py-2 px-4 active">Clipboard</a>
+              <a href="{% url 'docs_sounds' %}" class="list-group-item list-group-item-action border-0 py-2 px-4">Sound</a>
+              <a href="{% url 'docs_screenshot' %}" class="list-group-item list-group-item-action border-0 py-2 px-4">Screenshot</a>
+              <a href="{% url 'docs_file' %}" class="list-group-item list-group-item-action border-0 py-2 px-4">File Management</a>
+              <a href="https://api.{{ custom_domain }}/docs/" target="_blank" class="list-group-item list-group-item-action border-0 py-2 px-4">API</a>
+            </div>
+          </div>
+        </div>
+        <div class="swiper-scrollbar end-0"></div>
+      </div>
+    </div>
+  </aside>
+
+
+  <!-- Page container -->
+  <main class="docs-container pt-5">
+    <div class="container-fluid px-xxl-5 px-lg-4 pt-4 pt-lg-5 pb-2 pb-lg-4">
+      
+      <!-- Page title -->
+      <div class="d-sm-flex align-items-end justify-content-between ps-lg-2 ps-xxl-0 mt-2 mt-lg-0 pt-4 mb-n3">
+        <div class="me-4">
+          <h1 class="pb-1">Clipboard</h1>
+          <p class="text-muted fs-lg mb-2">Clipboard copy/paste settings.</p>
+        </div>
+      </div>
+
+
+      <!-- Copy -->
+      <section id="type-copy" class="border-bottom py-5 ps-lg-2 ps-xxl-0">
+        <h2 class="h4">Copy</h2>
+        <div>
+          <ol>
+            <li>Copy some content from inside the session.</li>
+            <li>Now you can paste the copied content to your device, as the content has been passed to your clipboard.</li>
+          </ol>
+        </div>
+      </section>
+
+
+      <!-- Paste -->
+      <section id="type-paste" class="border-bottom py-5 ps-lg-2 ps-xxl-0">
+        <h2 class="h4">Paste</h2>
+        <div>
+          <ol>
+            <li>Copy some external content that you want to paste inside the session.</li>
+            <li>Go to your active session.</li>
+            <li>Click to open the left side menu.</li>
+            <ul>
+              <li>
+                <div class="gallery" style="max-width: 416px;">
+                  <a href="{% static 'images/left-side-menu.jpg' %}" class="gallery-item rounded-3" data-sub-html='<h6 class="text-light">Left side menu location</h6>'>
+                    <img src="{% static 'images/left-side-menu.jpg' %}" alt="Gallery thumbnail">
+                    <div class="gallery-item-caption fs-sm fw-medium">Left side menu location</div>
+                  </a>
+                </div>
+              </li>
+            </ul>
+            <li>Click the "Clipboard" option.</li>
+            <ul>
+              <li>
+                <div class="gallery" style="max-width: 416px;">
+                  <a href="{% static 'images/clipboard.jpg' %}" class="gallery-item rounded-3" data-sub-html='<h6 class="text-light">Clipboard</h6>'>
+                    <img src="{% static 'images/clipboard.jpg' %}" alt="Gallery thumbnail">
+                    <div class="gallery-item-caption fs-sm fw-medium">Clipboard</div>
+                  </a>
+                </div>
+              </li>
+            </ul>
+            <li>A text box should open to type in.</li>
+            <ul>
+              <li>
+                <div class="gallery" style="max-width: 416px;">
+                  <a href="{% static 'images/text-box.jpg' %}" class="gallery-item rounded-3" data-sub-html='<h6 class="text-light">Text box</h6>'>
+                    <img src="{% static 'images/text-box.jpg' %}" alt="Gallery thumbnail">
+                    <div class="gallery-item-caption fs-sm fw-medium">Text box</div>
+                  </a>
+                </div>
+              </li>
+            </ul>
+            <li>Paste your content inside the text box, so it can be copied to the sessions clipboard.</li>
+            <ul>
+              <li>
+                <div class="gallery" style="max-width: 416px;">
+                  <a href="{% static 'images/paste.jpg' %}" class="gallery-item rounded-3" data-sub-html='<h6 class="text-light">Paste</h6>'>
+                    <img src="{% static 'images/paste.jpg' %}" alt="Gallery thumbnail">
+                    <div class="gallery-item-caption fs-sm fw-medium">Paste</div>
+                  </a>
+                </div>
+              </li>
+            </ul>
+            <li>Now you can paste inside the session, as the content has been passed to the clipboard.</li>
+          </ol>
+        </div>
+      </section>
+    </div>
+  </main>
+
+
+  <!-- Jump to anchor navigation -->
+  <aside class="side-nav side-nav-end d-none d-xxl-block position-fixed top-0 end-0 vh-100 py-5" style="width: 20rem;">
+    <h3 class="fs-lg mt-5 pt-5">Jump to</h3>
+    <ul class="nav" id="jumpToNav">
+      <li class="nav-item">
+        <a href="#type-copy" class="nav-link" data-scroll data-scroll-offset="-6">Copy</a>
+      </li>
+      <li class="nav-item">
+        <a href="#type-paste" class="nav-link" data-scroll data-scroll-offset="-6">Paste</a>
+      </li>
+    </ul>
+  </aside>
+
+
+  <!-- Back to top button -->
+  <a href="#top" class="btn-scroll-top" data-scroll>
+    <span class="btn-scroll-top-tooltip text-muted fs-sm me-2">Top</span>
+    <i class="btn-scroll-top-icon bx bx-chevron-up"></i>
+  </a>
+
+
+  {% block bscripts %}
+
+  <!-- Docs-specific scripts -->
+  <script src="{% static 'assets/vendor/prismjs/components/prism-core.min.js' %}"></script>
+  <script src="{% static 'assets/vendor/prismjs/components/prism-markup.min.js' %}"></script>
+  <script src="{% static 'assets/vendor/prismjs/components/prism-clike.min.js' %}"></script>
+  <script src="{% static 'assets/vendor/prismjs/plugins/toolbar/prism-toolbar.min.js' %}"></script>
+  <script src="{% static 'assets/vendor/prismjs/plugins/copy-to-clipboard/prism-copy-to-clipboard.min.js' %}"></script>
+  <script src="{% static 'assets/vendor/prismjs/plugins/line-numbers/prism-line-numbers.min.js' %}"></script>
+  <script src="{% static 'assets/vendor/lightgallery/lightgallery.min.js' %}"></script>
+  <script src="{% static 'assets/vendor/lightgallery/plugins/fullscreen/lg-fullscreen.min.js' %}"></script>
+  <script src="{% static 'assets/vendor/lightgallery/plugins/zoom/lg-zoom.min.js' %}"></script>
+  <script src="{% static 'assets/vendor/lightgallery/plugins/video/lg-video.min.js' %}"></script>
+  <script src="{% static 'assets/vendor/lightgallery/plugins/thumbnail/lg-thumbnail.min.js' %}"></script>
+{% endblock %}
+
+<script>
+  document.addEventListener("DOMContentLoaded", function() {
+    var footer = document.querySelector("footer");
+    if (footer) {
+      footer.style.display = "none";
+    }
+  });
+</script>
+
+{% endblock %}

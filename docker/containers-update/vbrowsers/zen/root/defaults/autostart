@@ -1,0 +1,18 @@
+#!/bin/bash
+
+startzen \
+  --start-maximized \
+  --no-first-run \
+  --disable-session-crashed-bubble \
+  --hide-crash-restore-bubble \
+  --user-data-dir \
+  --disable-dev-shm-usage \
+  "$@" $FF_OPEN_URL > /dev/null 2>&1
+
+PROCESS_NAME="startzen"
+
+
+
+
+
+

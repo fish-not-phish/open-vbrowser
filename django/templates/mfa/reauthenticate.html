@@ -1,0 +1,260 @@
+{% extends 'main/main.html' %}
+{% load i18n %}
+{% block content %}
+<style>
+    .main-section {
+    background: linear-gradient(rgba(0, 0, 0, 0.925), rgba(0, 0, 0, 0.925)), url('/static/images/street-hacker.png') no-repeat center center fixed !important;
+    background-position: center center !important;
+    background-repeat: no-repeat !important;
+    background-attachment: fixed !important;
+    background-size: cover !important;
+}
+    h1 {
+    font-size: 23px;
+    }
+
+    .form {
+    width: 300px;
+    padding: 64px 15px 24px;
+    margin: 0 auto;
+    }
+
+    .alert {
+      color: #e4e9f7;
+    }
+    .form .control {
+    margin: 0 0 24px;
+    color: #e4e9f7;
+    }
+    .form .control input {
+    width: 100%;
+    padding: 14px 16px;
+    border: 0;
+    background: transparent;
+    color: #fff;
+    font-family: monospace, serif;
+    letter-spacing: 0.05em;
+    font-size: 16px;
+    }
+    .form .control input:hover, .form .control input:focus {
+    outline: none;
+    border: 0;
+    }
+    .form .btn {
+    width: 100%;
+    display: block;
+    padding: 14px 16px;
+    background: transparent;
+    outline: none;
+    border: 0;
+    color: #fff;
+    letter-spacing: 0.1em;
+    font-weight: bold;
+    font-family: monospace;
+    font-size: 16px;
+    }
+
+    .block-cube {
+    position: relative;
+    }
+    .block-cube .bg-top {
+    position: absolute;
+    height: 10px;
+    background: #020024;
+    background: linear-gradient(90deg, #020024 0%,#e66465 37%, #9198e5 94%);
+    bottom: 100%;
+    left: 5px;
+    right: -5px;
+    transform: skew(-45deg, 0);
+    margin: 0;
+    }
+    .block-cube .bg-top .bg-inner {
+    bottom: 0;
+    }
+    .block-cube .bg {
+    position: absolute;
+    left: 0;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    background: #020024;
+    background: linear-gradient(90deg, #020024 0%,#e66465 37%, #9198e5 94%);
+    }
+    .block-cube .bg-right {
+    position: absolute;
+    background: #020024;
+    background: #9198e5;
+    top: -5px;
+    z-index: 0;
+    bottom: 5px;
+    width: 10px;
+    left: 100%;
+    transform: skew(0, -45deg);
+    }
+    .block-cube .bg-right .bg-inner {
+    left: 0;
+    }
+    .block-cube .bg .bg-inner {
+    transition: all 0.2s ease-in-out;
+    }
+    .block-cube .bg-inner {
+    background: #212121;
+    position: absolute;
+    left: 2px;
+    top: 2px;
+    right: 2px;
+    bottom: 2px;
+    }
+    .block-cube .text {
+    position: relative;
+    z-index: 2;
+    }
+    .block-cube.block-input input {
+    position: relative;
+    z-index: 2;
+    }
+    .block-cube.block-input input:focus ~ .bg-right .bg-inner, .block-cube.block-input input:focus ~ .bg-top .bg-inner, .block-cube.block-input input:focus ~ .bg-inner .bg-inner {
+    top: 100%;
+    background: #e4e9f7;
+    }
+    .block-cube.block-input .bg-top,
+    .block-cube.block-input .bg-right,
+    .block-cube.block-input .bg {
+    background: #e4e9f7;
+    transition: background 0.2s ease-in-out;
+    }
+    .block-cube.block-input .bg-right .bg-inner,
+    .block-cube.block-input .bg-top .bg-inner {
+    transition: all 0.2s ease-in-out;
+    }
+    .block-cube.block-input:focus .bg-top,
+    .block-cube.block-input:focus .bg-right,
+    .block-cube.block-input:focus .bg, .block-cube.block-input:hover .bg-top,
+    .block-cube.block-input:hover .bg-right,
+    .block-cube.block-input:hover .bg {
+    background: rgba(255, 255, 255, 0.8);
+    }
+    .block-cube.block-cube-hover:focus .bg .bg-inner, .block-cube.block-cube-hover:hover .bg .bg-inner {
+    top: 100%;
+    }
+
+    .credits {
+    position: fixed;
+    left: 0;
+    bottom: 0;
+    padding: 15px 15px;
+    width: 100%;
+    z-index: 111;
+    }
+    .credits a {
+    opacity: 0.6;
+    color: #fff;
+    font-size: 11px;
+    text-decoration: none;
+    }
+    .credits a:hover {
+    opacity: 1;
+    }
+</style>
+
+
+
+
+<!-- Page content -->
+<section class="position-relative h-100 pt-5 pb-4">
+
+    <!-- MFA Reauthentication form -->
+    <div class="container d-flex flex-wrap justify-content-center justify-content-xl-start h-100 pt-5">
+      <div class="w-100 align-self-end pt-1 pt-md-4 pb-4" style="max-width: 526px;">
+        <h1 class="text-center text-xl-start">{% blocktranslate %}Reauthenticate{% endblocktranslate %}</h1>
+        <form action="{% url 'mfa_reauthenticate' %}" method="POST" class="needs-validation mb-2">
+          {% csrf_token %}
+          <p class="text-center text-xl-start">{% blocktranslate %}Enter an authenticator code:{% endblocktranslate %}</p>
+          <!-- Authenticator Code Input -->
+          <div class="control block-cube block-input mb-3">
+            <input name="otp" placeholder="{% trans 'Authenticator Code' %}" type="text" class="form-control form-control-lg">
+            <div class="bg-top">
+              <div class="bg-inner"></div>
+            </div>
+            <div class="bg-right">
+              <div class="bg-inner"></div>
+            </div>
+            <div class="bg">
+              <div class="bg-inner"></div>
+            </div>
+          </div>
+          
+          <!-- Hidden redirect field if necessary -->
+          {% if redirect_field_value %}
+            <input type="hidden" name="{{ redirect_field_name }}" value="{{ redirect_field_value }}">
+          {% endif %}
+          
+          <button class="btn btn-primary shadow-primary btn-lg w-100" type="submit">
+            <div class="bg-top">
+              <div class="bg-inner"></div>
+            </div>
+            <div class="bg-right">
+              <div class="bg-inner"></div>
+            </div>
+            <div class="bg">
+              <div class="bg-inner"></div>
+            </div>
+            <div class="text">{% trans "Confirm" %}</div>
+          </button>
+        </form>
+      </div>
+    </div>
+    
+    <!-- Background -->
+    <div class="position-absolute top-0 end-0 w-50 h-100 bg-position-center bg-repeat-0 bg-size-cover d-none d-xl-block"
+         style="background-image: url('{% static 'assets/img/account/signin-bg.jpg' %}');"></div>
+  </section>
+
+
+<!-- <div class="form">
+    <form action="{% url 'mfa_reauthenticate' %}" method="POST">
+        {% csrf_token %}
+        <div class='control'>
+            <h1>
+              {% blocktranslate %}Reauthenticate{% endblocktranslate %}
+            </h1>
+        </div>
+        
+        <p>{% blocktranslate %}Enter an authenticator code:{% endblocktranslate %}</p>
+        <br>
+        
+        <div class='control block-cube block-input'>
+            <input name='otp' placeholder='{% trans "Authenticator Code" %}' type='text'>
+            <div class='bg-top'>
+                <div class='bg-inner'></div>
+            </div>
+            <div class='bg-right'>
+                <div class='bg-inner'></div>
+            </div>
+            <div class='bg'>
+                <div class='bg-inner'></div>
+            </div>
+        </div>
+        
+      
+        {% if redirect_field_value %}
+            <input type="hidden" name="{{ redirect_field_name }}" value="{{ redirect_field_value }}" />
+        {% endif %}
+        
+        <button class='btn block-cube block-cube-hover' type='submit'>
+            <div class='bg-top'>
+                <div class='bg-inner'></div>
+            </div>
+            <div class='bg-right'>
+                <div class='bg-inner'></div>
+            </div>
+            <div class='bg'>
+                <div class='bg-inner'></div>
+            </div>
+            <div class='text'>
+                {% trans "Confirm" %}
+            </div>
+        </button>
+    </form>
+</div> -->
+{% endblock %}

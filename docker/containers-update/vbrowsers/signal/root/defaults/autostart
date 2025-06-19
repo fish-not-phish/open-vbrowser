@@ -1,0 +1,12 @@
+#!/bin/bash
+
+signal-desktop \
+   --no-sandbox \
+   "$@" > /dev/null 2>&1
+
+PROCESS_NAME="signal-desktop"
+
+
+
+
+

@@ -1,0 +1,14 @@
+{% extends "rest_framework/base.html" %}
+{% load static %}
+
+{% block head  %}
+    {{ block.super }}
+    <link rel="icon" href="{% static 'images/vbrowser-16.png' %}" type="image/x-icon">
+{% endblock %}
+
+{% block branding %}
+
+<a class='navbar-brand' rel="nofollow">
+    vBrowser API
+</a>
+{% endblock %}

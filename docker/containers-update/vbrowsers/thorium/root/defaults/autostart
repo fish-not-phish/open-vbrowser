@@ -1,0 +1,25 @@
+#!/bin/bash
+
+echo "Starting Thorium Browser..."
+
+# Launch Thorium Browser with similar options to your Brave setup
+thorium-browser \
+  --start-maximized \
+  --no-first-run \
+  --disable-session-crashed-bubble \
+  --simulate-outdated-no-au='Tue, 31 Dec 2099 23:59:59 GMT' \
+  --hide-crash-restore-bubble \
+  --user-data-dir \
+  --password-store=basic \
+  --ignore-gpu-blocklist \
+  --disable-dev-shm-usage \
+  --check-for-update-interval=31449600 \
+  "$@" $FF_OPEN_URL > /dev/null 2>&1
+
+PROCESS_NAME="thorium"
+
+
+
+
+
+
