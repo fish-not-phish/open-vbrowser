@@ -77,7 +77,13 @@ COPY /custom-cont-init.d /custom-cont-init.d
 RUN dos2unix /custom-cont-init.d/* && chmod +x /custom-cont-init.d/*
 
 RUN rm /etc/nginx/sites-enabled/default
-USER vUser
+
+RUN apt-get update && \
+    apt-get install -y sudo && \
+    usermod -aG sudo vUser && \
+    usermod --shell /bin/bash vUser && \
+    echo 'vUser ALL=(ALL) NOPASSWD:ALL' > /etc/sudoers.d/vUser && \
+    chmod 0440 /etc/sudoers.d/vUser
 # Set the entrypoint
 ENTRYPOINT ["/usr/bin/tini", "--", "/usr/local/bin/entrypoint.sh"]
 
