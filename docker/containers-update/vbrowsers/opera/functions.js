@@ -1,7 +1,7 @@
 const uuid = "{{UUID}}";
 const CUSTOM_DOMAIN="{{CUSTOM_DOMAIN}}";
 const DEFAULT_IDLE_THRESHOLD="{{DEFAULT_IDLE_THRESHOLD}}";
-const idleThreshold = parseInt(DEFAULT_IDLE_THRESHOLD, 10) * 60;
+const idleThreshold = parseInt(DEFAULT_IDLE_THRESHOLD);
 console.log("User UUID:", uuid);
 
 // Function to capture the canvas screenshot with a conditional diagonal watermark and send data to the parent
