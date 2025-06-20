@@ -155,6 +155,7 @@ If you don’t already have one, sign up at:
    - **Token name**: `Terraform DNS Access` (or any descriptive name)
    - **Permissions**: `Zone.DNS:Edit`
    - **Resources**: Select **Specific Zone** and choose your domain (e.g. `example.com`)
+> ⚠️ **Important:** The API token must be **only alphanumeric**. If it contains any special characters, the certificate issuance via `acme.sh` will fail. Ensure your token consists of letters and numbers only.
 
 5. Create the token and **copy it**. You will only see it once.
 
