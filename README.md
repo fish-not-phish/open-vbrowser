@@ -155,9 +155,6 @@ If you don’t already have one, sign up at:
    - **Token name**: `Terraform DNS Access` (or any descriptive name)
    - **Permissions**: `Zone.DNS:Edit`
    - **Resources**: Select **Specific Zone** and choose your domain (e.g. `example.com`)
-> ⚠️ **Important:** The API token must be **only alphanumeric**. If it contains any special characters, the certificate issuance via `acme.sh` will fail. Ensure your token consists of letters and numbers only.
->  
-> 🔁 If your token includes non-alphanumeric characters, **roll/regenerate** the token until you receive one that contains only letters and numbers.
 
 5. Create the token and **copy it**. You will only see it once.
 
@@ -286,7 +283,16 @@ Recommend changing the following:
 ```bash
 docker logs containers-updater -f
 ```
-Please wait until it stops producing output and says `All done.`. Once this occurrs, the entire setup process has been completed.
+> ⚠️ **Important:** 
+> 
+> If you receive the error shown below, please roll your Cloudflare API Token, destroy the stack using `destroy.sh` (wait for it to finish building before destroying), and redploy using `setup.sh`.
+
+```bash
+invalid domain
+Error adding TXT record to domain: ...
+```
+
+Otherwise, please wait until it stops producing output and says `All done.`. Once this occurrs, the entire setup process has been completed.
 
 ---
 
