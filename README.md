@@ -156,6 +156,8 @@ If you don’t already have one, sign up at:
    - **Permissions**: `Zone.DNS:Edit`
    - **Resources**: Select **Specific Zone** and choose your domain (e.g. `example.com`)
 > ⚠️ **Important:** The API token must be **only alphanumeric**. If it contains any special characters, the certificate issuance via `acme.sh` will fail. Ensure your token consists of letters and numbers only.
+>  
+> 🔁 If your token includes non-alphanumeric characters, **roll/regenerate** the token until you receive one that contains only letters and numbers.
 
 5. Create the token and **copy it**. You will only see it once.
 
