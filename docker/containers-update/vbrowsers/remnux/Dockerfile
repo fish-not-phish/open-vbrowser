@@ -59,9 +59,6 @@ COPY keyfile.pem /config/ssl/cert.key
 RUN dos2unix /config/ssl/cert.key
 RUN dos2unix /config/ssl/cert.pem
 
-# may want to rename kasmbins and kclient (kasm name scheme)
-# todo last item to finish
-
 # override noVNC index.html /usr/local/share/kasmvnc/www/index.html
 RUN rm -f /usr/local/share/kasmvnc/www/index.html
 COPY www-index.html /usr/local/share/kasmvnc/www/index.html
@@ -98,8 +95,6 @@ RUN dos2unix /usr/local/share/kasmvnc/www/dist/functions.js
 
 # Add Background
 ADD /src/common/resources/images/bg_remnux.png  /usr/share/backgrounds/bg_default.png
-
-# add applications
 
 RUN mkdir -p /config/Desktop/
 ENV HOME /config
@@ -252,61 +247,6 @@ RUN \
       procyon-decompiler \ 
       netcat \
       libjpeg8-dev \
-      # radare2 \
-      # runsc \
-      # snap \
-      # snapd \
-      # xorsearch \
-      # vscode \
-      # usbmount \
-      # swftools \
-      # vscode \
-      # SQLite \
-      # spidermonkey \
-      # signsrch \
-      # scdbg \
-      # sandfly-processdecloak \
-      # qt5-default \
-      # python39-dev \
-      # python-pyqt5 \
-      # powershell \
-      # procdot \
-      # pycdc \
-      # python-crypto \ 
-      # python-dnspython \ 
-      # python-magic \
-      # python-numpy \
-      # python-pil \
-      # python-pyasn1 \ 
-      # portex \
-      # pgadmin3 \
-      # openssh \
-      # oledump \
-      # nsrllookup \
-      # msoffice-crypt \
-      # linux-headers \
-      # libusb-1 \
-      # libre2 \
-      # libolecf \
-      # libncurses \
-      # libmysqlclient20 \
-      # libglib2 \
-      # libemu \
-      # ilspy \
-      # i386-architecture \
-      # ghidra \
-      # flare-floss \
-      # exfat-utils \
-      # enchant \
-      # dotnet-runtime-3-1 \
-      # dex2jar \
-      # burpsuite-community \
-      # bulk-extractor \
-      # binee \
-      # bearparser \
-      # bddisasm \
-      # baksmali \
-      # aeskeybfind \
       gnupg && \
   echo "**** cleanup ****" && \
   rm -rf /config/.cache /tmp/* && \
