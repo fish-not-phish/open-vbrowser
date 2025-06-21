@@ -75,7 +75,7 @@ services:
     #   - "traefik.http.routers.django-api.tls.certresolver=cloudflare"
     #   - "traefik.http.routers.django-api.service=django-service"
 
-    #   - "traefik.http.services.django-service.loadbalancer.server.port=8444"
+    #   - "traefik.http.services.django-service.loadbalancer.server.port=80"
 
 volumes:
   mysql_data:
