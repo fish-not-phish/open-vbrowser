@@ -25,6 +25,7 @@ RUN ln -fs /usr/share/zoneinfo/Etc/UTC /etc/localtime && \
     curl \
     python3 \
     python3-pip \
+    jq \
     bash && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/*
@@ -73,7 +74,9 @@ COPY default.conf /etc/nginx/conf.d/default.conf
 RUN dos2unix /etc/nginx/conf.d/default.conf
 
 # Copy and set up init scripts
-COPY /custom-cont-init.d /custom-cont-init.d
+COPY 1-app.sh /custom-cont-init.d/1-app.sh
+COPY 3-app.sh /custom-cont-init.d/3-app.sh
+COPY 4-app.sh /custom-cont-init.d/4-app.sh
 RUN dos2unix /custom-cont-init.d/* && chmod +x /custom-cont-init.d/*
 
 RUN rm /etc/nginx/sites-enabled/default

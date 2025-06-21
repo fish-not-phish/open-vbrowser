@@ -11,6 +11,8 @@ export CUSTOM_DOMAIN="CUSTOM_DOMAIN"
 
 echo "Starting script execution."
 
+echo "CF Token: ${CF_API_TOKEN}, CF Zone: ${CF_ZONE_ID}, Domain: ${CUSTOM_DOMAIN}"
+
 # Check if required environment variables are set
 echo "Checking required environment variables..."
 if [ -z "${UUID:-}" ]; then
