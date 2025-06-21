@@ -21,3 +21,4 @@ django-filter
 fido2
 gunicorn
 django-allauth[mfa]
+whitenoise
