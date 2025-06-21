@@ -84,7 +84,7 @@ vars=(
 
 # Default values
 declare -A defaults=(
-  [DEBUG]="0"
+  [DEBUG]="False"
   [CUSTOM_DOMAIN]="domain.tld"
   [DB_NAME]="vbrowserdb"
   [DB_USER]="admin"

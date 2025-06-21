@@ -16,6 +16,9 @@ from dotenv import load_dotenv
 import re
 import base64
 
+def str_to_bool(val):
+    val = str(val).strip().lower()
+    return val in ('true', '1', 'yes')
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -29,7 +32,7 @@ load_dotenv(dotenv_path=str(ENV_PATH), override=True)
 SECRET_KEY = os.environ['SECRET_KEY']
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = os.environ['DEBUG']
+DEBUG = str_to_bool(os.environ.get('DEBUG', 'False'))
 
 raw_hosts = os.environ['ALLOWED_HOSTS']
 
