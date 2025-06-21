@@ -40,9 +40,6 @@ COPY keyfile.pem /config/ssl/cert.key
 RUN dos2unix /config/ssl/cert.key
 RUN dos2unix /config/ssl/cert.pem
 
-# may want to rename kasmbins and kclient (kasm name scheme)
-# todo last item to finish
-
 # override noVNC index.html /usr/local/share/kasmvnc/www/index.html
 RUN rm -f /usr/local/share/kasmvnc/www/index.html
 COPY www-index.html /usr/local/share/kasmvnc/www/index.html
