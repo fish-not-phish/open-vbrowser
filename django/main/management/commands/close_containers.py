@@ -31,49 +31,31 @@ class Command(BaseCommand):
 
         # Delete the found containers
         deleted_count, _ = containers_without_user_and_not_active.delete()
-        if active_containers:
-            # Calculate threshold for each subscription tier
-            threshold = settings.DEFAULT_IDLE_THRESHOLD
-            default_threshold = now - datetime.timedelta(minutes=int(threshold))
+        threshold_minutes = int(settings.DEFAULT_IDLE_THRESHOLD)
+        cutoff = now - datetime.timedelta(minutes=threshold_minutes)
 
-            # Stop containers for users who have exceeded their last ping threshold
-            open_containers = OpenContainers.objects.filter(
-                last_ping_at__lte=default_threshold,
-                container__active=True
-            )
+        open_containers = OpenContainers.objects.filter(
+            last_ping_at__lte=cutoff,
+            container__active=True
+        )
 
-            for open_container in open_containers:
-                container = open_container.container
-                if container.name == "api_session" or container.type == "remnux":
-                    continue
+        for open_container in open_containers:
+            container = open_container.container
 
-                if open_container.last_ping_at <= default_threshold:
-                    delete_container.delay(str(container.uuid))
-                    container.active = False
-                    container.closed_at = timezone.now()
-                    container.save()
-                    open_container.closed_at = timezone.now()
-                    open_container.save()
-                    print(f'AFK Stop {container.subdomain}...')
-                        
+            # skip API-session containers
+            if container.name == "api_session" or container.type == "remnux":
+                continue
 
-            for container in active_containers:
-                time_difference = now - container.start_time
-                if container.type == "remnux":
-                    continue
+            print(f"AFK Stop: {container.subdomain} (last_ping at {open_container.last_ping_at})")
+            delete_container.delay(str(container.uuid))
 
-                if time_difference > datetime.timedelta(minutes=int(threshold)):
-                    delete_container.delay(str(container.uuid))
+            container.active = False
+            container.closed_at = timezone.now()
+            container.save()
 
-                    container.active = False
-                    container.closed_at = timezone.now()
-                    container.save()
-                    open_container = OpenContainers.objects.get(container=container)
-                    open_container.closed_at = timezone.now()
-                    open_container.save()
-                    print(f'Max Time Limit Stop {container.subdomain}...')
-                
-
+            open_container.closed_at = timezone.now()
+            open_container.save()
+            print(f"  → marked inactive and closed at {container.closed_at}")
 
                     
         
