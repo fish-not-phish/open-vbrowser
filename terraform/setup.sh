@@ -67,11 +67,22 @@ docker_images_var="$docker_images_var\n]"
 
 # Update the docker_images variable in terraform.tfvars
 if [[ -f "terraform.tfvars" ]]; then
-  # Use sed to replace the docker_images section
-  sed -i '/^docker_images = \[/,/^\]/c\
-docker_images = [\
-'"$(printf '%s\n' "${selected_images[@]}" | sed 's/.*/  "&",/')"'\
-]' terraform.tfvars
+  echo "→ Replacing docker_images in terraform.tfvars"
+  TMP_FILE=$(mktemp)
+
+  awk '
+    BEGIN {in_block=0}
+    /^docker_images = \[/ {in_block=1; print "docker_images = ["; next}
+    in_block && /^\]/ {
+      in_block=0;
+      # Insert selected images from ENV
+      while ((getline img < "/dev/stdin") > 0) print "  \"" img "\","; 
+      print "]"; next
+    }
+    !in_block {print}
+  ' terraform.tfvars <<< "$(printf '%s\n' "${selected_images[@]}")" > "$TMP_FILE"
+
+  mv "$TMP_FILE" terraform.tfvars
 else
   echo "Warning: terraform.tfvars not found. Using default values."
 fi

@@ -48,7 +48,5 @@ sed -i \
     "$automated_file"
 
 bash /automated/update.sh
-cd /terraform
-bash generate_images.sh
 echo "All done."
 sleep infinity
