@@ -5,7 +5,6 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 BASE_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
 
 TERRAFORM_CONTAINER="containers-updater"
-
 TF_WORKDIR="/terraform"
 
 echo "→ Initializing Terraform inside '$TERRAFORM_CONTAINER'…"
@@ -19,9 +18,8 @@ docker exec -w "$TF_WORKDIR" "$TERRAFORM_CONTAINER" \
     -auto-approve \
     -var-file=images.auto.tfvars.json
 
-terraform destroy \
-    -input=false \
-    -auto-approve 
+echo "→ Destroying main infrastructure..."
+terraform destroy -input=false -auto-approve
 
 echo "✓ Terraform destroy complete."
 

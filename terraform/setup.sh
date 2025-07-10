@@ -57,6 +57,25 @@ for dir in "$VBROWSERS_DIR"/*; do
   fi
 done
 
+# Generate Terraform variables for selected images
+echo "Updating terraform.tfvars with selected images..."
+docker_images_var="docker_images = ["
+for img in "${selected_images[@]}"; do
+  docker_images_var="$docker_images_var\n  \"$img\","
+done
+docker_images_var="$docker_images_var\n]"
+
+# Update the docker_images variable in terraform.tfvars
+if [[ -f "terraform.tfvars" ]]; then
+  # Use sed to replace the docker_images section
+  sed -i '/^docker_images = \[/,/^\]/c\
+docker_images = [\
+'"$(printf '%s\n' "${selected_images[@]}" | sed 's/.*/  "&",/')"'\
+]' terraform.tfvars
+else
+  echo "Warning: terraform.tfvars not found. Using default values."
+fi
+
 SECRET_KEY=$( \
   openssl rand -base64 64 | tr -d '/+=' | cut -c1-50 \
 )
@@ -100,7 +119,7 @@ declare -A defaults=(
   [CF_Zone_ID]="xxxx"
   [CF_Token]="xxxx"
   [MYSQL_ROOT_PASSWORD]="rootpass"
-  [AWS_DEFAULT_REGION]="us-east-2"
+  [AWS_DEFAULT_REGION]="us-east-1"
 )
 
 # Start fresh
@@ -112,6 +131,7 @@ echo "SECRET_KEY=${SECRET_KEY}" >> "$ENV_FILE"
 # Track values for reuse
 CUSTOM_DOMAIN_VALUE=""
 DJANGO_SUPERUSER_EMAIL_VALUE=""
+AWS_DEFAULT_REGION_VALUE=""
 
 # Prompt loop
 for key in "${vars[@]}"; do
@@ -124,44 +144,36 @@ for key in "${vars[@]}"; do
     CUSTOM_DOMAIN_VALUE="$value"
   elif [ "$key" = "DJANGO_SUPERUSER_EMAIL" ]; then
     DJANGO_SUPERUSER_EMAIL_VALUE="$value"
-  fi
-  if [ "$key" = "AWS_DEFAULT_REGION" ]; then
+  elif [ "$key" = "AWS_DEFAULT_REGION" ]; then
+    AWS_DEFAULT_REGION_VALUE="$value"
     export AWS_DEFAULT_REGION="$value"
   fi
 done
 
 # Auto-generated entries
 echo "ALLOWED_HOSTS=${CUSTOM_DOMAIN_VALUE},api.${CUSTOM_DOMAIN_VALUE}" >> "$ENV_FILE"
-echo "USER_EMAIL=${DJANGO_SUPERUSER_EMAIL_VALUE}"       >> "$ENV_FILE"
-echo "AWS_DEFAULT_REGION=${AWS_DEFAULT_REGION}"       >> "$ENV_FILE"
+echo "USER_EMAIL=${DJANGO_SUPERUSER_EMAIL_VALUE}" >> "$ENV_FILE"
+echo "AWS_DEFAULT_REGION=${AWS_DEFAULT_REGION_VALUE}" >> "$ENV_FILE"
 
 echo ""
 echo "✅  $ENV_FILE created with these contents:"
 sed -e 's/^/   /' "$ENV_FILE"
 echo ""
 
-echo "$BASE_DIR"
-declare -a tfiles=(
-  "$BASE_DIR/docker/containers-update/terraform/providers.tf"
-  "$BASE_DIR/docker/containers-update/terraform/ecs_tasks.tf"
-  "$BASE_DIR/terraform/providers.tf"
-)
+# Update terraform.tfvars with AWS region
+if [[ -f "terraform.tfvars" ]]; then
+  sed -i "s/^aws_region = .*/aws_region = \"${AWS_DEFAULT_REGION_VALUE}\"/" terraform.tfvars
+  echo "→ Updated aws_region in terraform.tfvars"
+fi
 
-for tf in "${tfiles[@]}"; do
-  if [[ -f "$tf" ]]; then
-    sed -i -E \
-      -e "s/(^[[:space:]]*region[[:space:]]*=[[:space:]]*\").*(\"[[:space:]]*$)/\1${AWS_DEFAULT_REGION}\2/" \
-      -e "s/(^[[:space:]]*awslogs-region[[:space:]]*=[[:space:]]*\").*(\"[[:space:]]*$)/\1${AWS_DEFAULT_REGION}\2/" \
-      "$tf"
-    echo "→ Patched region in $(realpath --relative-to="$BASE_DIR" "$tf")"
-  else
-    echo "⚠️  Terraform file not found: $tf"
-  fi
-done
-
+# Initialize and apply Terraform
+echo "🚀 Initializing Terraform..."
 terraform init
+
+echo "🏗️  Applying Terraform configuration..."
 terraform apply -auto-approve
 
+# Remove empty lines from .env
 sed -i '/^[[:space:]]*$/d' "$ENV_FILE"
 
 # Copy .env into the docker-related folders

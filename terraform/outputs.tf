@@ -1,50 +1,64 @@
 output "vpc_id" {
-  description = "ID of the vbrowser VPC"
-  value       = aws_vpc.vbrowser.id
+  value       = module.infrastructure.vpc_id
 }
 
 output "vpc_arn" {
-  description = "ARN of the vbrowser VPC"
-  value       = aws_vpc.vbrowser.arn
+  value       = module.infrastructure.vpc_arn
 }
 
 output "public_subnet_ids" {
-  description = "IDs of the public subnets"
-  value = [
-    aws_subnet.public1.id,
-    aws_subnet.public2.id,
-  ]
+  value       = module.infrastructure.public_subnet_ids
 }
 
 output "public_subnet_arns" {
-  description = "ARNs of the public subnets"
-  value = [
-    aws_subnet.public1.arn,
-    aws_subnet.public2.arn,
-  ]
+  value       = module.infrastructure.public_subnet_arns
 }
 
 output "security_group_id" {
-  description = "ID of the vbrowser-sg Security Group"
-  value       = aws_security_group.vbrowser_sg.id
+  value       = module.infrastructure.security_group_id
 }
 
 output "security_group_arn" {
-  description = "ARN of the vbrowser-sg Security Group"
-  value       = aws_security_group.vbrowser_sg.arn
+  value       = module.infrastructure.security_group_arn
 }
 
 output "ecs_cluster_arn" {
-  description = "ARN of the vbrowsers ECS Cluster"
-  value       = aws_ecs_cluster.vbrowsers.arn
+  value       = module.infrastructure.ecs_cluster_arn
+}
+
+output "ecs_cluster_name" {
+  value       = module.infrastructure.ecs_cluster_name
 }
 
 output "ecr_repository_url" {
-  description = "URL of the vbrowsers ECR repository (for docker push/pull)"
-  value       = aws_ecr_repository.vbrowsers.repository_url
+  value       = module.infrastructure.ecr_repository_url
 }
 
 output "ecr_repository_arn" {
-  description = "ARN of the vbrowsers ECR repository"
-  value       = aws_ecr_repository.vbrowsers.arn
+  value       = module.infrastructure.ecr_repository_arn
+}
+
+output "ecs_task_execution_role_arn" {
+  value       = module.infrastructure.ecs_task_execution_role_arn
+}
+
+output "vbrowser_user_access_key_id" {
+  value       = module.infrastructure.vbrowser_user_access_key_id
+}
+
+output "vbrowser_user_secret_access_key" {
+  value       = module.infrastructure.vbrowser_user_secret_access_key
+  sensitive   = true
+}
+
+output "task_definition_arns" {
+  value       = module.ecs_tasks.task_definition_arns
+}
+
+output "task_definition_families" {
+  value       = module.ecs_tasks.task_definition_families
+}
+
+output "log_group_names" {
+  value       = module.ecs_tasks.log_group_names
 }

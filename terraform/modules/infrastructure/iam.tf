@@ -1,6 +1,63 @@
+resource "aws_iam_role" "ecs_task_execution_role" {
+  name = var.ecs_task_role_name
+
+  assume_role_policy = jsonencode({
+    Version = var.iam_policy_version
+    Statement = [
+      {
+        Sid    = ""
+        Effect = "Allow"
+        Principal = {
+          Service = var.ecs_service_principal
+        }
+        Action = "sts:AssumeRole"
+      }
+    ]
+  })
+
+  tags = merge(var.common_tags, {
+    Name = var.ecs_task_role_name
+  })
+}
+
+resource "aws_iam_role_policy_attachment" "ecs_task_execution_role_policy" {
+  role       = aws_iam_role.ecs_task_execution_role.name
+  policy_arn = var.aws_ecs_task_execution_role_policy_arn
+}
+
+resource "aws_iam_role_policy" "ecs_task_execution_logs" {
+  name = var.ecs_task_execution_policy_name
+  role = aws_iam_role.ecs_task_execution_role.id
+
+  policy = jsonencode({
+    Version = var.iam_policy_version
+    Statement = [
+      # allow creation of any log-group
+      {
+        Effect   = "Allow"
+        Action   = "logs:CreateLogGroup"
+        Resource = "*"
+      },
+      # allow creating streams & pushing events only under /ecs/*
+      {
+        Effect = "Allow"
+        Action = [
+          "logs:CreateLogStream",
+          "logs:PutLogEvents"
+        ]
+        Resource = "arn:aws:logs:${data.aws_region.current.name}:${data.aws_caller_identity.current.account_id}:log-group:/ecs/*:log-stream:*"
+      }
+    ]
+  })
+}
+
 resource "aws_iam_user" "vbrowser" {
-  name = "vbrowser-user"
-  path = "/"
+  name = var.iam_user_name
+  path = var.iam_user_path
+
+  tags = merge(var.common_tags, {
+    Name = var.iam_user_name
+  })
 }
 
 resource "aws_iam_access_key" "vbrowser" {
@@ -9,21 +66,15 @@ resource "aws_iam_access_key" "vbrowser" {
 
 resource "aws_iam_user_policy_attachment" "vbrowser_read_only" {
   user       = aws_iam_user.vbrowser.name
-  policy_arn = "arn:aws:iam::aws:policy/ReadOnlyAccess"
+  policy_arn = var.aws_readonly_access_policy_arn
 }
 
-data "aws_caller_identity" "current" {}
-
-data "aws_region" "current" {}
-
-data "aws_partition" "current" {}
-
 resource "aws_iam_user_policy" "vbrowser_ecr_push" {
-  name = "vbrowser-ecr-push"
+  name = "${var.iam_user_name}-${var.ecr_policy_suffix}"
   user = aws_iam_user.vbrowser.name
 
   policy = jsonencode({
-    Version = "2012-10-17"
+    Version = var.iam_policy_version
     Statement = [
       # allow login to ECR
       {
@@ -49,11 +100,11 @@ resource "aws_iam_user_policy" "vbrowser_ecr_push" {
 }
 
 resource "aws_iam_user_policy" "vbrowser_ecs_task_defs" {
-  name = "vbrowser-ecs-task-definitions"
+  name = "${var.iam_user_name}-${var.ecs_task_defs_policy_suffix}"
   user = aws_iam_user.vbrowser.name
 
   policy = jsonencode({
-    Version = "2012-10-17"
+    Version = var.iam_policy_version
     Statement = [
       {
         Sid    = "AllowRegisterAndDescribe"
@@ -93,11 +144,11 @@ resource "aws_iam_user_policy" "vbrowser_ecs_task_defs" {
 }
 
 resource "aws_iam_user_policy" "vbrowser_logs" {
-  name = "vbrowser-logs"
+  name = "${var.iam_user_name}-${var.logs_policy_suffix}"
   user = aws_iam_user.vbrowser.name
 
   policy = jsonencode({
-    Version = "2012-10-17"
+    Version = var.iam_policy_version
     Statement = [
       {
         Sid    = "AllowCreateAndTagLogGroups"
@@ -122,17 +173,4 @@ resource "aws_iam_user_policy" "vbrowser_logs" {
       }
     ]
   })
-}
-
-
-
-output "vbrowser_user_access_key_id" {
-  description = "Access Key ID for the vbrowser-user"
-  value       = aws_iam_access_key.vbrowser.id
-}
-
-output "vbrowser_user_secret_access_key" {
-  description = "Secret Access Key for the vbrowser-user"
-  value       = aws_iam_access_key.vbrowser.secret
-  sensitive   = true
 }
