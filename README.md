@@ -113,7 +113,7 @@ You can pass the credentials via environment variables:
 ```bash
 export AWS_ACCESS_KEY_ID="your-access-key-id"
 export AWS_SECRET_ACCESS_KEY="your-secret-access-key"
-export AWS_DEFAULT_REGION="us-east-2"  # must be the same regoin you wish to deploy the stack to
+export AWS_DEFAULT_REGION="us-east-2"  # must be the same region you wish to deploy the stack to
 ```
 ## 🌐 Cloudflare Setup
 
