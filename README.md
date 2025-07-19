@@ -188,6 +188,8 @@ The `setup.sh` script automates the full initialization process for Open vBrowse
 ### 1. **Image Selection**  
    Prompts the user to choose default or custom browser containers (e.g. Chrome, Remnux). It moves unused images into a separate `unused/` folder and restores any selected images.
 
+> ⚠️ Open vBrowser pre-selects Chrome, Terminal, Remnux, Mullvad and Tor by default.
+
 #### ✅ Example
 
 To enable **Chrome**, **Microsoft Edge**, and **IceCat**, enter:
