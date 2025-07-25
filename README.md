@@ -48,8 +48,8 @@ vBrowser was initially created by **Joseph Fisher**, a Cyber Threat Intelligence
 |--------------|----------|-----------|----------------------------------|
 | `amd64`      | Linux    | ✅ Yes     | Fully tested and supported       |
 | `amd64`      | Windows  | ⚠️ Likely  | Not tested, but expected to work |
-| `aarch64`    | Linux    | ❌ No      | Not yet tested or supported      |
-| `arm64`      | Linux    | ❌ No      | Not yet tested or supported      |
+| `aarch64`    | Linux    | ⚠️ Likely     | Not tested, but expected to work      |
+| `arm64`      | Linux    | ⚠️ Likely      | Not tested, but expected to work      |
 
 > ℹ️ OvB has only been tested on **Linux (amd64)** systems. Windows support is **expected** but not verified. All documentation currently assumes a Linux environment.
 
