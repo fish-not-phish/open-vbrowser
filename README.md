@@ -328,4 +328,10 @@ This dual verification ensures that only authorized clients with a valid domain 
 
 
 ## License
-See the LICENSE file for full details.
+
+This project is licensed under a custom **Non-Commercial License**.  
+You may use, modify, and distribute the software for **personal and educational use only**.
+
+**Commercial use and resale are strictly prohibited** without express written permission from the author.
+
+For licensing questions, contact jfisher@vbrowser.io.
