@@ -41,7 +41,6 @@
   }
 
   .session-bold {
-      color: black;
       text-align: center;
       font-weight: 700;
   }
@@ -52,7 +51,6 @@
       margin-right: 20px;
       padding: 10px; /* Optional: Add some padding for better appearance */
       box-sizing: border-box;
-      color: black;
   }
 
   .session-input::placeholder {
@@ -112,7 +110,6 @@
 
   .browser-name {
       text-align: center;
-      color: black;
   }
 
   .browser-card:hover {
@@ -177,7 +174,6 @@ color: inherit;
 
 .body {
 position: relative;
-background-color: #fff;
 overflow: hidden;
 display: flex;
 justify-content: center;
@@ -219,7 +215,6 @@ transform: translateY(5%);
 .standard { 
 margin-top: 12px;
 font-size: 90%;
-color: black;
 }
 
 .label, .toggle {
@@ -239,7 +234,7 @@ cursor: pointer;
 .toggle {
 position: absolute;
 width: 50%;
-background-color: #fff;
+background-color: #CF7287;
 box-shadow: 0 2px 15px rgba(0,0,0,.15);
 transition: transform .3s cubic-bezier(0.25, 0.46, 0.45, 0.94), background-color .3s;
 }
@@ -304,7 +299,6 @@ background-color: #CF7287; /* Change toggle color when checked */
 }
 
 #switch:checked + .app .turbo {
-color: white;
 opacity: 1; 
 }
 
@@ -413,7 +407,7 @@ text-align: center;
             const descriptionDiv = document.getElementById('session-description');
             if (switchInput.checked) {
                 sessionTypeInput.value = 'vSpot';
-                descriptionDiv.innerHTML = `<p style="color:black; text-align:center;"><strong style="color:black;">vSpot utilizes the AWS ECS Fargate Spot instances for short sessions and may be reclaimed by AWS at any time, resulting in interruption. However, vSpot sessions have a small associated cost.</strong> </small></p>`;
+                descriptionDiv.innerHTML = `<p style="text-align:center;"><strong>vSpot utilizes the AWS ECS Fargate Spot instances for short sessions and may be reclaimed by AWS at any time, resulting in interruption. However, vSpot sessions have a small associated cost.</strong> </small></p>`;
 
                 document.querySelector('.browser-options').style.display = 'flex';
                 document.getElementById('session-create-btn').style.display = 'block';
@@ -423,7 +417,7 @@ text-align: center;
                 
             } else {
                 sessionTypeInput.value = 'vStandard';
-                descriptionDiv.innerHTML = '<p style="color:black;text-align:center;">vStandard utilizes the AWS ECS Fargate instances for longstanding sessions.</p>';
+                descriptionDiv.innerHTML = '<p style="text-align:center;">vStandard utilizes the AWS ECS Fargate instances for longstanding sessions.</p>';
                 document.querySelector('.browser-options').style.display = 'flex';
                 document.getElementById('session-create-btn').style.display = 'block';
                 document.getElementById('session-input').style.display = 'block';
