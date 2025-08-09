@@ -25,6 +25,7 @@ RUN \
     p7zip-full \
     python3 \
     bzip2 \
+    jq \
     python3-pip \
     python3-certbot-nginx && \
   apt-get autoclean && \
