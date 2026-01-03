@@ -63,3 +63,7 @@ environment_variables = [
   { name = "PGID", value = "1000" },
   { name = "TZ", value = "Etc/UTC" }
 ]
+
+# SOCI Configuration
+enable_soci_indexing   = true
+soci_image_tag_filters = "*:*"

@@ -255,6 +255,41 @@ variable "environment_variables" {
   ]
 }
 
+variable "enable_soci_indexing" {
+  type        = bool
+  default     = true
+}
+
+variable "soci_stack_name" {
+  type    = string
+  default = "soci-index-builder"
+}
+
+variable "soci_image_tag_filters" {
+  type        = string
+  default     = "*:*"
+}
+
+variable "soci_s3_bucket" {
+  type    = string
+  default = "aws-quickstart"
+}
+
+variable "soci_s3_key_prefix" {
+  type    = string
+  default = "cfn-ecr-aws-soci-index-builder/"
+}
+
+variable "soci_iam_permissions_boundary" {
+  type    = string
+  default = "none"
+}
+
+variable "soci_capabilities" {
+  type    = list(string)
+  default = ["CAPABILITY_NAMED_IAM"]
+}
+
 variable "common_tags" {
   type        = map(string)
   default = {

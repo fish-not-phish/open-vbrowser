@@ -63,12 +63,6 @@ RUN \
     /var/tmp/* \
     /tmp/*
 
-COPY fullchain.pem /config/ssl/cert.pem
-COPY keyfile.pem /config/ssl/cert.key
-
-RUN dos2unix /config/ssl/cert.key
-RUN dos2unix /config/ssl/cert.pem
-
 # add local files
 COPY /root /
 

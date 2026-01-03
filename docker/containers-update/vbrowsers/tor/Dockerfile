@@ -34,16 +34,7 @@ RUN \
     /var/tmp/* \
     /tmp/*
 
-
-RUN pip3 install --break-system-packages flask requests
 ARG TARGETARCH
-
-# copy cert
-COPY fullchain.pem /config/ssl/cert.pem
-COPY keyfile.pem /config/ssl/cert.key
-
-RUN dos2unix /config/ssl/cert.key
-RUN dos2unix /config/ssl/cert.pem
 
 # override noVNC index.html /usr/local/share/kasmvnc/www/index.html
 RUN rm -f /usr/local/share/kasmvnc/www/index.html

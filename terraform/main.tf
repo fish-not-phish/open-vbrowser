@@ -40,6 +40,14 @@ module "infrastructure" {
   default_capacity_provider  = var.default_capacity_provider
   capacity_provider_weight   = var.capacity_provider_weight
 
+  enable_soci_indexing          = var.enable_soci_indexing
+  soci_stack_name               = var.soci_stack_name
+  soci_image_tag_filters        = var.soci_image_tag_filters
+  soci_s3_bucket                = var.soci_s3_bucket
+  soci_s3_key_prefix            = var.soci_s3_key_prefix
+  soci_iam_permissions_boundary = var.soci_iam_permissions_boundary
+  soci_capabilities             = var.soci_capabilities
+
   common_tags = var.common_tags
 }
 
