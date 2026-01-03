@@ -1,4 +1,6 @@
-FROM ghcr.io/linuxserver/baseimage-selkies:debianbookworm-88437702-ls87
+FROM ghcr.io/linuxserver/baseimage-selkies:ubuntunoble-2425a14b-ls97
+# ubuntunoble-2425a14b-ls97 newer
+# ubuntunoble-d40a31d0-ls96 older
 
 # set version label
 ARG BUILD_DATE
@@ -58,27 +60,36 @@ RUN \
 RUN mkdir -p /config/Desktop/
 ENV HOME /config
 WORKDIR $HOME
-ENV DEBIAN_FRONTEND=noninteractive \
-    SKIP_CLEAN=true \
-    DONT_PROMPT_WSL_INSTALL="No_Prompt_please" \
-    INST_DIR=$STARTUPDIR/install \
-    INST_SCRIPTS="/ubuntu/install/tools/install_tools_deluxe.sh \
-                  /ubuntu/install/firefox/install_firefox.sh \
-                  /ubuntu/install/cleanup/cleanup.sh"
-
-# Copy install scripts
-COPY ./src/ $INST_DIR
-
-# Run installations
 RUN \
-  for SCRIPT in $INST_SCRIPTS; do \
-    bash ${INST_DIR}${SCRIPT} || exit 1; \
-  done && \
-  rm -f /etc/X11/xinit/Xclients && \
-  chown 1000:0 $HOME && \
-  mkdir -p /config/Desktop/ && \
-  chown -R 1000:0 /config/Desktop && \
-  rm -Rf ${INST_DIR}
+  echo "**** install packages ****" && \
+  apt-key adv \
+    --keyserver hkp://keyserver.ubuntu.com:80 \
+    --recv-keys 5301FA4FD93244FBC6F6149982BB6851C64F6880 && \
+  echo \
+    "deb https://ppa.launchpadcontent.net/xtradeb/apps/ubuntu noble main" > \
+    /etc/apt/sources.list.d/xtradeb.list && \
+  apt-get update && \
+  apt-get install -y --no-install-recommends \
+    firefox \
+    ^firefox-locale && \
+  echo "**** default firefox settings ****" && \
+  FIREFOX_SETTING="/usr/lib/firefox/browser/defaults/preferences/firefox.js" && \
+  echo 'pref("datareporting.policy.firstRunURL", "");' > ${FIREFOX_SETTING} && \
+  echo 'pref("datareporting.policy.dataSubmissionEnabled", false);' >> ${FIREFOX_SETTING} && \
+  echo 'pref("datareporting.healthreport.service.enabled", false);' >> ${FIREFOX_SETTING} && \
+  echo 'pref("datareporting.healthreport.uploadEnabled", false);' >> ${FIREFOX_SETTING} && \
+  echo 'pref("trailhead.firstrun.branches", "nofirstrun-empty");' >> ${FIREFOX_SETTING} && \
+  echo 'pref("browser.aboutwelcome.enabled", false);' >> ${FIREFOX_SETTING} && \
+  echo 'pref("security.sandbox.warn_unprivileged_namespaces", false);' >> ${FIREFOX_SETTING} && \
+  printf "Linuxserver.io version: ${VERSION}\nBuild-date: ${BUILD_DATE}" > /build_version && \
+  echo "**** cleanup ****" && \
+  apt-get autoclean && \
+  rm -rf \
+    /config/.cache \
+    /config/.launchpadlib \
+    /var/lib/apt/lists/* \
+    /var/tmp/* \
+    /tmp/*
 
 RUN mkdir -p /config/items/
 RUN mkdir -p /config/Downloads/

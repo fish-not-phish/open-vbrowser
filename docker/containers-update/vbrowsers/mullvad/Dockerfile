@@ -68,12 +68,12 @@ RUN \
     ifupdown \
     iproute2 \
     iptables \
-    dos2unix \
     libdbus-glib-1-2 \
     libgtk-3-0 \
-    inotify-tools \
     net-tools \
     wireguard \
+    dos2unix \
+    inotify-tools \
     p7zip-full \
     python3 \
     python3-pip \
@@ -96,7 +96,7 @@ RUN \
   mkdir -p /app && \
   if [ -z ${MULLVAD_VERSION+x} ]; then \
     MULLVAD_VERSION=$(curl -sX GET "https://api.github.com/repos/mullvad/mullvad-browser/releases/latest" \
-    | jq -r .name | awk -F ' ' '{print $3}'); \
+    | jq -r .tag_name); \
   fi && \
   curl -s -o \
     /tmp/mullvad.tar.xz -L \

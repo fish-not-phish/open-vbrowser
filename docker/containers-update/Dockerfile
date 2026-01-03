@@ -9,6 +9,7 @@ RUN apt-get update && \
         ca-certificates \
         cron \
         gnupg \
+        dos2unix \
         software-properties-common \
         unzip && \
     apt-get clean && \
@@ -36,6 +37,12 @@ RUN chmod 777 -R /automated
 
 COPY /vbrowsers /vbrowsers/
 RUN chmod 777 -R /vbrowsers
+
+COPY install-docker.sh /tmp/install-docker-cli.sh
+RUN dos2unix /tmp/install-docker-cli.sh
+RUN chmod +x /tmp/install-docker-cli.sh && \
+    /tmp/install-docker-cli.sh && \
+    rm /tmp/install-docker-cli.sh
 
 RUN echo "0 2 */5 * * /automated/update.sh" | crontab -
 
