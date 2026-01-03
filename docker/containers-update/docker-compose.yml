@@ -6,6 +6,7 @@ services:
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
       - ./automated/certs:/automated/certs
+      - /usr/bin/docker:/usr/bin/docker:ro
     env_file:
       - .env
     entrypoint: ["/usr/local/bin/update_containers.sh"]

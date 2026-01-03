@@ -6,6 +6,13 @@ USER_EMAIL="{{USER_EMAIL}}"
 not_found=0
 ACME_HOME="/root/.acme.sh/acme.sh"
 CERT_DIR="/root/.acme.sh/*.${CUSTOM_DOMAIN}_ecc"
+CF_Token="${CF_Token}"
+CF_Zone_ID="${CF_Zone_ID}"
+
+export CF_Token
+export CF_Zone_ID
+echo $CF_Token
+echo $CF_Zone_ID
 
 if [[ ! -d "${ACME_HOME}" ]]; then
   echo "→ Installing acme.sh for the first time (account email: ${USER_EMAIL})"

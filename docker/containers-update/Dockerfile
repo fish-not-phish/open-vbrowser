@@ -5,7 +5,6 @@ RUN apt-get update && \
         bash \
         sed \
         curl \
-        docker.io \
         openssl \
         ca-certificates \
         cron \
