@@ -1,4 +1,4 @@
-FROM ghcr.io/linuxserver/baseimage-kasmvnc:debianbookworm
+FROM ghcr.io/linuxserver/baseimage-selkies:debianbookworm-88437702-ls87
 
 # set version label
 ARG BUILD_DATE
@@ -7,7 +7,34 @@ LABEL build_version="vBrowser version:- ${VERSION} Build-date:- ${BUILD_DATE}"
 LABEL maintainer="vBrowser"
 
 # title
-ENV TITLE=Mullvad
+ENV TITLE=Mullvad \
+    NO_GAMEPAD=true
+
+RUN \
+  echo "**** add icon ****" && \
+  curl -o \
+    /usr/share/selkies/www/icon.png \
+    https://raw.githubusercontent.com/linuxserver/docker-templates/master/linuxserver.io/img/kali-logo.png && \
+  echo "**** install packages ****" && \
+  apt-get update && \
+  DEBIAN_FRONTEND=noninteractive \
+  apt-get install -y --no-install-recommends \
+    plasma-desktop \
+    plasma-workspace \
+    qml-module-qt-labs-platform \
+    sqlitebrowser \
+    systemsettings && \
+  echo "**** kde tweaks ****" && \
+  sed -i \
+    's/applications:org.kde.discover.desktop,/applications:org.kde.konsole.desktop,/g' \
+    /usr/share/plasma/plasmoids/org.kde.plasma.taskmanager/contents/config/main.xml && \
+  echo "**** cleanup ****" && \
+  apt-get autoclean && \
+  rm -rf \
+    /config/.cache \
+    /var/lib/apt/lists/* \
+    /var/tmp/* \
+    /tmp/*
 
 ENV MULLVAD_RELEASE_GPG_KEY="A1198702FC3E0A09A9AE5B75D5A1D4F266DE8DDF"
 ENV TORPROJECT_RELEASE_GPG_KEY="EF6E286DDA85EA2A4BA7DE684E2C6E8793298290"
@@ -20,12 +47,7 @@ RUN \
     apt-transport-https \
     wget \
     ca-certificates \
-    awscli \
-    certbot \
-    p7zip-full \
-    python3 \
-    python3-pip \
-    python3-certbot-nginx && \
+    p7zip-full && \
   apt-get autoclean && \
   rm -rf \
     /config/.cache \
@@ -35,9 +57,6 @@ RUN \
 
 RUN \
   echo "**** add icon ****" && \
-  curl -o \
-    /kclient/public/icon.png \
-    https://raw.githubusercontent.com/linuxserver/docker-templates/master/linuxserver.io/img/mullvad-browser-logo.png && \
   echo "**** install build dependencies ****" && \
   apt-get update && \
   apt-get install -y --no-install-recommends \
@@ -52,6 +71,7 @@ RUN \
     dos2unix \
     libdbus-glib-1-2 \
     libgtk-3-0 \
+    inotify-tools \
     net-tools \
     wireguard \
     p7zip-full \
@@ -107,42 +127,6 @@ RUN \
     /var/lib/apt/lists/* \
     /var/tmp/*
 
-# override noVNC index.html /usr/local/share/kasmvnc/www/index.html
-RUN rm -f /usr/local/share/kasmvnc/www/index.html
-COPY www-index.html /usr/local/share/kasmvnc/www/index.html
-
-RUN dos2unix /usr/local/share/kasmvnc/www/index.html
-
-# override kclient index.html /kclient/public/index.html
-RUN rm -f /kclient/public/index.html
-COPY index.html /kclient/public/index.html
-
-RUN dos2unix /kclient/public/index.html
-
-RUN rm -f /kclient/public/filebrowser.html
-
-COPY filebrowser.html /kclient/public/filebrowser.html
-
-RUN dos2unix /kclient/public/filebrowser.html
-
-RUN rm -f /kclient/public/js/filebrowser.js
-
-COPY filebrowser.js /kclient/public/js/filebrowser.js
-
-RUN dos2unix /kclient/public/js/filebrowser.js
-
-RUN rm -f /kclient/public/js/kclient.js
-
-COPY kclient.js /kclient/public/js/kclient.js
-
-RUN dos2unix /kclient/public/js/kclient.js
-
-COPY functions.js /usr/local/share/kasmvnc/www/dist/functions.js
-
-RUN dos2unix /usr/local/share/kasmvnc/www/dist/functions.js
-
-# add applications
-
 RUN mkdir -p /config/Desktop/
 ENV HOME /config
 WORKDIR $HOME
@@ -167,14 +151,20 @@ RUN \
   chown -R 1000:0 /config/Desktop && \
   rm -Rf ${INST_DIR}
 
-# change favicon
-RUN rm -f /kclient/public/favicon.ico
-COPY vbrowser-favicon.png /kclient/public/favicon.ico
+RUN rm -f /usr/share/selkies/www/icon.png
+COPY logo.png /usr/share/selkies/www/icon.png
+RUN dos2unix /usr/share/selkies/www/icon.png
 
-RUN dos2unix /kclient/public/favicon.ico
-RUN chmod 777 /kclient/public/favicon.ico
+RUN rm -f /usr/share/selkies/www/nginx/footer.html
+COPY footer.html /usr/share/selkies/www/nginx/footer.html
+RUN dos2unix /usr/share/selkies/www/nginx/footer.html
 
-# override nginx default site with token verification /defaults/default.conf AND /etc/nginx/sites-available/
+COPY functions.js /usr/share/selkies/www/assets/functions.js
+RUN dos2unix /usr/share/selkies/www/assets/functions.js
+
+COPY functions.css /usr/share/selkies/www/assets/functions.css
+RUN dos2unix /usr/share/selkies/www/assets/functions.css
+
 RUN rm -f /defaults/default.conf
 COPY default.conf /defaults/default.conf
 RUN dos2unix /defaults/default.conf
@@ -185,8 +175,25 @@ COPY run /etc/s6-overlay/s6-rc.d/init-nginx/run
 RUN dos2unix /etc/s6-overlay/s6-rc.d/init-nginx/run
 RUN chmod 777 /etc/s6-overlay/s6-rc.d/init-nginx/run
 
-# add startup scripts to this /etc/s6-overlay/s6-rc.d/init-custom-files/
-# put in order of how you want them run
+RUN mkdir -p /config/items/
+RUN mkdir -p /config/Downloads/
+RUN chmod -R 777 /config/Downloads
+RUN chmod -R 777 /config/items
+
+RUN mkdir -p /etc/s6-overlay/s6-rc.d/html-injector
+COPY up /etc/s6-overlay/s6-rc.d/html-injector/up
+RUN dos2unix /etc/s6-overlay/s6-rc.d/html-injector/up && \
+    chmod +x /etc/s6-overlay/s6-rc.d/html-injector/up
+
+COPY html-injector.sh /usr/local/bin/html-injector.sh
+RUN dos2unix /usr/local/bin/html-injector.sh
+RUN chmod +x /usr/local/bin/html-injector.sh
+
+RUN echo "oneshot" > /etc/s6-overlay/s6-rc.d/html-injector/type
+RUN dos2unix /etc/s6-overlay/s6-rc.d/html-injector/type
+
+RUN ln -s /etc/s6-overlay/s6-rc.d/html-injector /etc/s6-overlay/s6-rc.d/user/contents.d/html-injector
+
 RUN mkdir -p /custom-cont-init.d
 COPY 1-app.sh /custom-cont-init.d/1-app.sh
 COPY 2-app.sh /custom-cont-init.d/2-app.sh
@@ -195,12 +202,7 @@ RUN dos2unix /custom-cont-init.d/1-app.sh
 RUN dos2unix /custom-cont-init.d/2-app.sh 
 
 RUN chmod 777 /custom-cont-init.d/1-app.sh 
-RUN chmod 777 /custom-cont-init.d/2-app.sh 
-
-RUN mkdir -p /config/items/
-RUN mkdir -p /config/Downloads/
-RUN chmod -R 777 /config/Downloads
-RUN chmod -R 777 /config/items
+RUN chmod 777 /custom-cont-init.d/2-app.sh
 
 # add cfg for mullvad
 COPY browser-cfg /browser-cfg

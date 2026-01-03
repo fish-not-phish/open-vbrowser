@@ -1,4 +1,4 @@
-FROM ghcr.io/linuxserver/baseimage-kasmvnc:debianbookworm
+FROM ghcr.io/linuxserver/baseimage-selkies:debianbookworm-88437702-ls87
 
 # set version label
 ARG BUILD_DATE
@@ -7,29 +7,28 @@ LABEL build_version="vBrowser version:- ${VERSION} Build-date:- ${BUILD_DATE}"
 LABEL maintainer="vBrowser"
 
 # title
-ENV TITLE=Seamonkey
+ENV TITLE=Seamonkey \
+    NO_GAMEPAD=true
 
 RUN \
+  echo "**** add icon ****" && \
   curl -o \
-    /kclient/public/icon.png \
-    https://raw.githubusercontent.com/linuxserver/docker-templates/master/linuxserver.io/img/chromium-logo.png && \
+    /usr/share/selkies/www/icon.png \
+    https://raw.githubusercontent.com/linuxserver/docker-templates/master/linuxserver.io/img/kali-logo.png && \
+  echo "**** install packages ****" && \
   apt-get update && \
+  DEBIAN_FRONTEND=noninteractive \
   apt-get install -y --no-install-recommends \
-    dos2unix \
-    curl \
-    apt-transport-https \
-    wget \
-    ca-certificates \
-    awscli \
-    certbot \
-    tilix \
-    libdbus-glib-1-2:amd64 \
-    libgtk2.0-0 \
-    p7zip-full \
-    python3 \
-    bzip2 \
-    python3-pip \
-    python3-certbot-nginx && \
+    plasma-desktop \
+    plasma-workspace \
+    qml-module-qt-labs-platform \
+    sqlitebrowser \
+    systemsettings && \
+  echo "**** kde tweaks ****" && \
+  sed -i \
+    's/applications:org.kde.discover.desktop,/applications:org.kde.konsole.desktop,/g' \
+    /usr/share/plasma/plasmoids/org.kde.plasma.taskmanager/contents/config/main.xml && \
+  echo "**** cleanup ****" && \
   apt-get autoclean && \
   rm -rf \
     /config/.cache \
@@ -37,41 +36,27 @@ RUN \
     /var/tmp/* \
     /tmp/*
 
-# override noVNC index.html /usr/local/share/kasmvnc/www/index.html
-RUN rm -f /usr/local/share/kasmvnc/www/index.html
-COPY www-index.html /usr/local/share/kasmvnc/www/index.html
-
-RUN dos2unix /usr/local/share/kasmvnc/www/index.html
-
-# override kclient index.html /kclient/public/index.html
-RUN rm -f /kclient/public/index.html
-COPY index.html /kclient/public/index.html
-
-RUN dos2unix /kclient/public/index.html
-
-RUN rm -f /kclient/public/filebrowser.html
-
-COPY filebrowser.html /kclient/public/filebrowser.html
-
-RUN dos2unix /kclient/public/filebrowser.html
-
-RUN rm -f /kclient/public/js/filebrowser.js
-
-COPY filebrowser.js /kclient/public/js/filebrowser.js
-
-RUN dos2unix /kclient/public/js/filebrowser.js
-
-RUN rm -f /kclient/public/js/kclient.js
-
-COPY kclient.js /kclient/public/js/kclient.js
-
-RUN dos2unix /kclient/public/js/kclient.js
-
-COPY functions.js /usr/local/share/kasmvnc/www/dist/functions.js
-
-RUN dos2unix /usr/local/share/kasmvnc/www/dist/functions.js
-
-# add applications
+RUN \
+  apt-get update && \
+  apt-get install -y --no-install-recommends \
+    dos2unix \
+    curl \
+    apt-transport-https \
+    wget \
+    ca-certificates \
+    tilix \
+    inotify-tools \
+    libdbus-glib-1-2:amd64 \
+    libgtk2.0-0 \
+    p7zip-full \
+    python3 \
+    bzip2 && \
+  apt-get autoclean && \
+  rm -rf \
+    /config/.cache \
+    /var/lib/apt/lists/* \
+    /var/tmp/* \
+    /tmp/*
 
 RUN mkdir -p /config/Desktop/
 ENV HOME /config
@@ -100,15 +85,28 @@ RUN \
   chown -R 1000:0 /config/Desktop && \
   rm -Rf ${INST_DIR}
 
+RUN mkdir -p /config/items/
+RUN mkdir -p /config/Downloads/
+RUN chmod -R 777 /config/Downloads
+RUN chmod -R 777 /config/items
 
-# change favicon
-RUN rm -f /kclient/public/favicon.ico
-COPY vbrowser-favicon.png /kclient/public/favicon.ico
+# add local files
+COPY /root /
 
-RUN dos2unix /kclient/public/favicon.ico
-RUN chmod 777 /kclient/public/favicon.ico
+RUN rm -f /usr/share/selkies/www/icon.png
+COPY logo.png /usr/share/selkies/www/icon.png
+RUN dos2unix /usr/share/selkies/www/icon.png
 
-# override nginx default site with token verification /defaults/default.conf AND /etc/nginx/sites-available/
+RUN rm -f /usr/share/selkies/www/nginx/footer.html
+COPY footer.html /usr/share/selkies/www/nginx/footer.html
+RUN dos2unix /usr/share/selkies/www/nginx/footer.html
+
+COPY functions.js /usr/share/selkies/www/assets/functions.js
+RUN dos2unix /usr/share/selkies/www/assets/functions.js
+
+COPY functions.css /usr/share/selkies/www/assets/functions.css
+RUN dos2unix /usr/share/selkies/www/assets/functions.css
+
 RUN rm -f /defaults/default.conf
 COPY default.conf /defaults/default.conf
 RUN dos2unix /defaults/default.conf
@@ -119,8 +117,36 @@ COPY run /etc/s6-overlay/s6-rc.d/init-nginx/run
 RUN dos2unix /etc/s6-overlay/s6-rc.d/init-nginx/run
 RUN chmod 777 /etc/s6-overlay/s6-rc.d/init-nginx/run
 
-# add startup scripts to this /etc/s6-overlay/s6-rc.d/init-custom-files/
-# put in order of how you want them run
+RUN ln -s /config/Downloads /config/Desktop/Downloads
+
+COPY zip-watcher.sh /usr/local/bin/zip-watcher.sh
+RUN dos2unix /usr/local/bin/zip-watcher.sh
+RUN chmod +x /usr/local/bin/zip-watcher.sh
+
+RUN mkdir -p /etc/s6-overlay/s6-rc.d/zip-watcher
+COPY s6-run.sh /etc/s6-overlay/s6-rc.d/zip-watcher/run
+RUN dos2unix /etc/s6-overlay/s6-rc.d/zip-watcher/run
+RUN chmod +x /etc/s6-overlay/s6-rc.d/zip-watcher/run
+
+RUN echo "longrun" > /etc/s6-overlay/s6-rc.d/zip-watcher/type
+RUN dos2unix /etc/s6-overlay/s6-rc.d/zip-watcher/type
+
+RUN ln -s ../zip-watcher /etc/s6-overlay/s6-rc.d/user/contents.d/zip-watcher
+
+RUN mkdir -p /etc/s6-overlay/s6-rc.d/html-injector
+COPY up /etc/s6-overlay/s6-rc.d/html-injector/up
+RUN dos2unix /etc/s6-overlay/s6-rc.d/html-injector/up && \
+    chmod +x /etc/s6-overlay/s6-rc.d/html-injector/up
+
+COPY html-injector.sh /usr/local/bin/html-injector.sh
+RUN dos2unix /usr/local/bin/html-injector.sh
+RUN chmod +x /usr/local/bin/html-injector.sh
+
+RUN echo "oneshot" > /etc/s6-overlay/s6-rc.d/html-injector/type
+RUN dos2unix /etc/s6-overlay/s6-rc.d/html-injector/type
+
+RUN ln -s /etc/s6-overlay/s6-rc.d/html-injector /etc/s6-overlay/s6-rc.d/user/contents.d/html-injector
+
 RUN mkdir -p /custom-cont-init.d
 COPY 1-app.sh /custom-cont-init.d/1-app.sh
 COPY 2-app.sh /custom-cont-init.d/2-app.sh
@@ -129,15 +155,7 @@ RUN dos2unix /custom-cont-init.d/1-app.sh
 RUN dos2unix /custom-cont-init.d/2-app.sh 
 
 RUN chmod 777 /custom-cont-init.d/1-app.sh 
-RUN chmod 777 /custom-cont-init.d/2-app.sh 
-
-RUN mkdir -p /config/items/
-RUN mkdir -p /config/Downloads/
-RUN chmod -R 777 /config/Downloads
-RUN chmod -R 777 /config/items
-
-# add local files
-COPY /root /
+RUN chmod 777 /custom-cont-init.d/2-app.sh
 
 # ports and volumes
 EXPOSE 3000
