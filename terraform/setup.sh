@@ -11,7 +11,7 @@ VBROWSERS_DIR="$CONTAINERS_DIR/vbrowsers"
 UNUSED_DIR="$CONTAINERS_DIR/unused"
 
 # Default browser images
-default_images=(chrome terminal remnux mullvad tor)
+default_images=(chrome mullvad tor)
 
 # Ensure unused folder exists
 mkdir -p "$UNUSED_DIR"
