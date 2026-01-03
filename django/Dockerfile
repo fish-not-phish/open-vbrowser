@@ -9,7 +9,6 @@ RUN apt update && \
         python3-pip \
         python3-dev \
         python3.12-venv \
-        default-libmysqlclient-dev \
         build-essential \
         pkg-config \
         supervisor \

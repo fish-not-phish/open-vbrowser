@@ -10,8 +10,13 @@ startseamonkey \
   "$@" $FF_OPEN_URL > /dev/null 2>&1
 
 PROCESS_NAME="startseamonkey"
+API_URL="https://$CUSTOM_DOMAIN/close_session/$UUID"
 
-
-
-
-
+while true; do
+    if ! pgrep -f "$PROCESS_NAME" > /dev/null; then
+        echo "Process $PROCESS_NAME not found. Sending API request."
+        curl -X POST -H "Content-Type: application/json" "$API_URL"
+        break
+    fi
+    sleep 10  # Check every 10 seconds
+done

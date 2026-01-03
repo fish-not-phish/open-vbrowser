@@ -1,0 +1,3 @@
+#!/command/execlineb -P
+with-contenv
+/usr/local/bin/html-injector.sh

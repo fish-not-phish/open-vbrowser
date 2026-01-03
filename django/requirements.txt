@@ -1,6 +1,5 @@
 Django
 python-dotenv
-mysqlclient
 django-allauth
 celery
 redis
@@ -15,6 +14,7 @@ django-hosts
 django-allauth
 django-autoslug
 Pillow
+psycopg2-binary
 pytz
 requests
 django-filter

@@ -1,0 +1,89 @@
+/* Hide original sidebar logo (usually inside <a> tag in .sidebar-header) */
+.sidebar-header a {
+  display: none !important;
+}
+
+/* Insert your custom logo as a background image */
+.sidebar-header::before {
+  content: "" !important;
+  display: inline-block !important;
+  background-image: url('https://raw.githubusercontent.com/vbrowser/logos/refs/heads/main/logo-vbrowser-transparent.svg') !important;
+  background-size: contain !important;
+  background-repeat: no-repeat !important;
+  width: 100% !important;
+  height: 120px !important;
+  margin-right: 8px !important;
+  vertical-align: middle !important;
+}
+
+/* Replace the title text with 'vBrowser' and hide the original */
+.sidebar-header h2 {
+  position: relative !important;
+  color: #CF7287 !important;
+  font-size: inherit !important;
+  text-indent: -9999px !important; /* hide original text */
+  height: 30px !important;
+  line-height: 30px !important;
+}
+
+.sidebar-header h2::before {
+  content: "vBrowser" !important;
+  position: absolute !important;
+  left: 0 !important;
+  top: 0 !important;
+  text-indent: 0 !important;
+  color: #CF7287 !important;
+}
+
+/* Main sidebar text color */
+.sidebar {
+  color: #CF7287 !important;
+}
+
+.sidebar h2,
+.sidebar h3,
+.sidebar span,
+.sidebar button,
+.sidebar a,
+.sidebar p,
+.sidebar div {
+  color: #CF7287 !important;
+}
+
+/* SVG icons */
+.sidebar svg {
+  fill: #CF7287 !important;
+  color: #CF7287 !important;
+}
+
+/* Active button style */
+.action-button.active {
+  background-color: #e0e0e0 !important;
+  color: #333 !important;
+  border-color: #ccc !important;
+}
+
+/* Toggle indicator color */
+.toggle-indicator {
+  background-color: #CF7287 !important;
+}
+
+.toggle-button-sidebar.active {
+  background-color: #CF7287 !important;
+  color: #fff !important;
+  border-color: #CF7287 !important;
+}
+
+.toggle-button.active {
+  background-color: #CF7287 !important;
+  color: #fff !important;
+  border-color: #CF7287 !important;
+}
+
+.gaming-mode-button {
+    display: none !important;
+}
+
+.action-button:hover {
+    border-color: white !important;
+}

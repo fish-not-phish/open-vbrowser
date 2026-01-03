@@ -2,17 +2,16 @@
 
 # nginx Path
 NGINX_CONFIG=/etc/nginx/sites-available/default
-HTML_FILE="/kclient/public/index.html"
-HTML_FILE2="/usr/local/share/kasmvnc/www/index.html"
-FILE1="/usr/local/share/kasmvnc/www/dist/functions.js"
+JS_FILE=/usr/share/selkies/www/assets/functions.js
 
 UUID="${UUID}"
-DEFAULT_IDLE_THRESHOLD=""
-CUSTOM_DOMAIN=""
+DEFAULT_IDLE_THRESHOLD="${DEFAULT_IDLE_THRESHOLD}"
+CUSTOM_DOMAIN="${CUSTOM_DOMAIN}"
 
 # user passed env vars
 CPORT="${CUSTOM_PORT:-3000}"
 CHPORT="${CUSTOM_HTTPS_PORT:-3001}"
+CWS="${CUSTOM_WS_PORT:-8082}"
 CUSER="${CUSTOM_USER:-abc}"
 SFOLDER="${SUBFOLDER:-/}"
 
@@ -32,17 +31,30 @@ fi
 cp /defaults/default.conf ${NGINX_CONFIG}
 sed -i "s/3000/$CPORT/g" ${NGINX_CONFIG}
 sed -i "s/3001/$CHPORT/g" ${NGINX_CONFIG}
-sed -i "s|SUBFOLDER|$SFOLDER|g" ${NGINX_CONFIG}
 sed -i "s|{{UUID}}|$UUID|g" $NGINX_CONFIG
-sed -i "s|{{UUID}}|$UUID|g" $HTML_FILE
-sed -i "s|{{UUID}}|$UUID|g" $HTML_FILE2
-sed -i "s|{{UUID}}|$UUID|g" $FILE1
+sed -i "s/CWS/$CWS/g" ${NGINX_CONFIG}
+sed -i "s|SUBFOLDER|$SFOLDER|g" ${NGINX_CONFIG}
+sed -i "s|REPLACE_HOME|$HOME|g" ${NGINX_CONFIG}
+sed -i "s|{{UUID}}|$UUID|g" $JS_FILE
+sed -i "s|{{DEFAULT_IDLE_THRESHOLD}}|$DEFAULT_IDLE_THRESHOLD|g" $JS_FILE
+sed -i "s|{{CUSTOM_DOMAIN}}|$CUSTOM_DOMAIN|g" $JS_FILE
+sed -i "s|NGINX_VAR|${NGINX_VAR}|g" "$NGINX_CONFIG"
+s6-setuidgid abc mkdir -p $HOME/Desktop
 if [ ! -z ${DISABLE_IPV6+x} ]; then
   sed -i '/listen \[::\]/d' ${NGINX_CONFIG}
 fi
-chmod -R 755 /kclient
-chown -R www-data:www-data /kclient
 if [ ! -z ${PASSWORD+x} ]; then
   printf "${CUSER}:$(openssl passwd -apr1 ${PASSWORD})\n" > /etc/nginx/.htpasswd
   sed -i 's/#//g' ${NGINX_CONFIG}
 fi
+if [ ! -z ${DEV_MODE+x} ]; then
+  sed -i \
+    -e 's:location / {:location /null {:g' \
+    -e 's:location /devmode:location /:g' \
+    ${NGINX_CONFIG}
+fi
+
+# copy favicon
+cp \
+  /usr/share/selkies/www/icon.png \
+  /usr/share/selkies/www/favicon.ico

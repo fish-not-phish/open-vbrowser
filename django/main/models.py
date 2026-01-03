@@ -57,6 +57,9 @@ class SessionLog(models.Model):
     container = models.ForeignKey(Container, on_delete=models.SET_NULL, null=True)
     file_path = models.FileField(upload_to='session_logs/')
     date_created = models.DateTimeField("Date", auto_now_add=True, help_text="Format: YYYY-MM-DD HH:MM:SS", null=True, editable=False)
+
+class SiteSetting(models.Model):
+    signups = models.BooleanField("Sign Ups Allowed", default=True)
     
 
 

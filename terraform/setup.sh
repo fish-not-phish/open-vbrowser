@@ -108,7 +108,6 @@ vars=(
   DJANGO_SUPERUSER_PASSWORD
   CF_Zone_ID
   CF_Token
-  MYSQL_ROOT_PASSWORD
   AWS_DEFAULT_REGION
 )
 
@@ -119,8 +118,8 @@ declare -A defaults=(
   [DB_NAME]="vbrowserdb"
   [DB_USER]="admin"
   [DB_PASSWORD]="adminpass"
-  [DB_HOST]="mysql"
-  [DB_PORT]="3306"
+  [DB_HOST]="postgres"
+  [DB_PORT]="5432"
   [REDIS_URL]="redis://redis:6379/0"
   [LOGGER_ENABLED]="False"
   [DEFAULT_IDLE_THRESHOLD]="10"
@@ -129,7 +128,6 @@ declare -A defaults=(
   [DJANGO_SUPERUSER_PASSWORD]="SuperSecretPassword123!"
   [CF_Zone_ID]="xxxx"
   [CF_Token]="xxxx"
-  [MYSQL_ROOT_PASSWORD]="rootpass"
   [AWS_DEFAULT_REGION]="us-east-1"
 )
 

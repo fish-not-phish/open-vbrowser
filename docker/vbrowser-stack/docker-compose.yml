@@ -1,24 +1,20 @@
 services:
-  mysql:
-    image: mysql:8.0
-    container_name: mysql
+  postgres:
+    image: postgres:16-alpine
+    container_name: postgres
     restart: unless-stopped
     environment:
-      MYSQL_ROOT_PASSWORD: rootpass
-      MYSQL_DATABASE: "${DB_NAME:-}"
-      MYSQL_USER: "${DB_USER:-}"
-      MYSQL_PASSWORD: "${DB_PASSWORD:-}" 
+      POSTGRES_DB: "${DB_NAME:-}"
+      POSTGRES_USER: "${DB_USER:-}"
+      POSTGRES_PASSWORD: "${DB_PASSWORD:-}"
     volumes:
-      - mysql_data:/var/lib/mysql
-    ports:
-      - "3306:3306"
+      - postgres_data:/var/lib/postgresql/data
 
   redis:
     image: redis:7-alpine
     container_name: redis
     restart: unless-stopped
-    ports:
-      - "6379:6379"
+
   vbrowser:
     image: vbrowser:latest
     container_name: vbrowser
@@ -26,11 +22,11 @@ services:
     volumes:
       - ../../docker/containers-update/vbrowsers:/app/vbrowsers:ro
     depends_on:
-      - mysql
+      - postgres
       - redis
     
     ports:
-      - "8444:80"
+      - "8080:80"
 
     environment:
       SECRET_KEY: "${SECRET_KEY:-}"
@@ -78,7 +74,7 @@ services:
     #   - "traefik.http.services.django-service.loadbalancer.server.port=80"
 
 volumes:
-  mysql_data:
+  postgres_data:
 
     
 
