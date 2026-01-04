@@ -15,6 +15,14 @@ CWS="${CUSTOM_WS_PORT:-8082}"
 CUSER="${CUSTOM_USER:-abc}"
 SFOLDER="${SUBFOLDER:-/}"
 
+ADD_HEADERS="yes"
+
+if [[ "$ADD_HEADERS" == "yes" ]]; then
+    NGINX_VAR='add_header              Permissions-Policy "microphone=(self '"${CUSTOM_DOMAIN}"'), camera=(self '"${CUSTOM_DOMAIN}"'), speaker=(self '"${CUSTOM_DOMAIN}"'), autoplay=(self '"${CUSTOM_DOMAIN}"'), fullscreen=(self '"${CUSTOM_DOMAIN}"'), clipboard-read=(self '"${CUSTOM_DOMAIN}"'), clipboard-write=(self '"${CUSTOM_DOMAIN}"')";'
+else
+    NGINX_VAR='add_header              Permissions-Policy "microphone=*, camera=*, speaker=*, autoplay=*, fullscreen=*, clipboard-read=*, clipboard-write=*";'
+fi
+
 # create self signed cert
 if [ ! -f "/config/ssl/cert.pem" ]; then
   mkdir -p /config/ssl

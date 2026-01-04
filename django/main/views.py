@@ -223,6 +223,7 @@ def account_settings(request):
     # Use get_or_create to ensure an ExtendProfile exists.
     extendprofile, created = ExtendProfile.objects.get_or_create(user=user, defaults={'phone': '123-345-6789'})
     context = {}
+    site_settings = SiteSetting.get_settings()
     
     if request.method == 'POST':
         first_name = request.POST.get('first_name', '').strip()
@@ -241,6 +242,11 @@ def account_settings(request):
             extendprofile.phone = phone
             extendprofile.save()
         
+        if user.is_superuser:
+            signups_enabled = request.POST.get("signups_enabled") == "on"
+            site_settings.signups = signups_enabled
+            site_settings.save()
+        
         messages.success(request, "Account details updated successfully.")
         return redirect('account_settings')
     user = request.user
@@ -249,6 +255,7 @@ def account_settings(request):
     context['verified'] = email_verified
     context['user'] = user
     context['extendprofile'] = extendprofile
+    context['signups_enabled'] = site_settings.signups
     return render(request, 'main/account_settings.html', context)
 
 

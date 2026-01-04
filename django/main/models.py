@@ -60,6 +60,11 @@ class SessionLog(models.Model):
 
 class SiteSetting(models.Model):
     signups = models.BooleanField("Sign Ups Allowed", default=True)
+
+    @classmethod
+    def get_settings(cls):
+        obj, _ = cls.objects.get_or_create(pk=1)
+        return obj
     
 
 
