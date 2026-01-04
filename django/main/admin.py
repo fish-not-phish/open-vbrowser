@@ -59,3 +59,9 @@ class SessionLogAdmin(admin.ModelAdmin):
         'container',
         'file_path'
     ]
+
+@admin.register(SiteSetting)
+class SiteSettingAdmin(admin.ModelAdmin):
+    list_display = [
+        'signups',
+    ]

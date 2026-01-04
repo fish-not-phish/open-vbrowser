@@ -16,11 +16,17 @@ python3 manage.py shell << EOF
 from django.contrib.auth import get_user_model
 from allauth.account.models import EmailAddress
 from main.models import ExtendProfile
+from core.models import SiteSetting
 
 User = get_user_model()
 username = "${DJANGO_SUPERUSER_USERNAME}"
 email = "${DJANGO_SUPERUSER_EMAIL}"
 password = "${DJANGO_SUPERUSER_PASSWORD}"
+
+site_settings, created = SiteSetting.objects.get_or_create(
+    pk=1,
+    defaults={"signups": True},
+)
 
 if not User.objects.filter(email=email).exists():
     user = User.objects.create_superuser(
