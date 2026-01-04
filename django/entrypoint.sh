@@ -16,7 +16,7 @@ python3 manage.py shell << EOF
 from django.contrib.auth import get_user_model
 from allauth.account.models import EmailAddress
 from main.models import ExtendProfile
-from core.models import SiteSetting
+from main.models import SiteSetting
 
 User = get_user_model()
 username = "${DJANGO_SUPERUSER_USERNAME}"
