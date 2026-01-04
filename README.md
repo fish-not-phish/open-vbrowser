@@ -208,23 +208,17 @@ chrome,edge,icecat
 | <img src="django/static/images/edge.png"  width="20" alt="Brave logo"/>   | Microsoft Edge   | `edge`             |
 | <img src="django/static/images/falkon.png"  width="20" alt="Brave logo"/>   | Falkon           | `falkon`           |
 | <img src="django/static/images/firefox.png"  width="20" alt="Brave logo"/>   | Firefox          | `firefox`          |
-| <img src="django/static/images/floorp.png"  width="20" alt="Brave logo"/>   | Floorp           | `floorp`           |
-| <img src="django/static/images/icecat.png"  width="20" alt="Brave logo"/>   | IceCat           | `icecat`           |
 | <img src="django/static/images/librewolf.png"  width="20" alt="Brave logo"/>   | LibreWolf        | `librewolf`        |
 | <img src="django/static/images/mullvad.png"  width="20" alt="Brave logo"/> | Mullvad Browser  | `mullvad`          |
-| <img src="django/static/images/opera.png"  width="20" alt="Brave logo"/>   | Opera            | `opera`            |
 | <img src="django/static/images/palemoon.png"  width="20" alt="Brave logo"/>   | Pale Moon        | `palemoon`         |
-| <img src="django/static/images/postman.png"  width="20" alt="Brave logo"/> | Postman          | `postman`          |
 | <img src="django/static/images/pulse.png"  width="20" alt="Brave logo"/>   | Pulse Secure     | `pulse`            |
-| <img src="django/static/images/remnux.png"  width="20" alt="Brave logo"/>   | REMnux           | `remnux`           |
+| <img src="django/static/images/kali.png"  width="20" alt="Brave logo"/>   | Kali           | `kali`           |
 | <img src="django/static/images/seamonkey.png"  width="20" alt="Brave logo"/>   | SeaMonkey        | `seamonkey`        |
 | <img src="django/static/images/signal.png"  width="20" alt="Brave logo"/>   | Signal           | `signal`           |
 | <img src="django/static/images/slack.png"  width="20" alt="Brave logo"/>   | Slack            | `slack`            |
 | <img src="django/static/images/telegram.png"  width="20" alt="Brave logo"/>   | Telegram         | `telegram`         |
-| <img src="django/static/images/thorium.png"  width="20" alt="Brave logo"/>   | Thorium          | `thorium`          |
 | <img src="django/static/images/tor.png"  width="20" alt="Brave logo"/>   | Tor Browser      | `tor`              |
 | <img src="django/static/images/ungoogled.png"  width="20" alt="Brave logo"/>   | Ungoogled Chrome | `ungoogled`        |
-| <img src="django/static/images/vivaldi.png"  width="20" alt="Brave logo"/>   | Vivaldi          | `vivaldi`          |
 | <img src="django/static/images/waterfox.png"  width="20" alt="Brave logo"/>   | Waterfox         | `waterfox`         |
 | <img src="django/static/images/zen.png"  width="20" alt="Brave logo"/>   | Zen Browser      | `zen`              |
 | <img src="django/static/images/zoom.png"  width="20" alt="Brave logo"/>   | Zoom             | `zoom`             |
