@@ -12,6 +12,7 @@ ec2_client = boto3.client('ec2')
 SUBNET_ID = settings.SUBNET_ID
 SECURITY_GROUP_ID = settings.SECURITY_GROUP_ID
 CUSTOM_DOMAIN = settings.CUSTOM_DOMAIN
+DEFAULT_IDLE_THRESHOLD = settings.DEFAULT_IDLE_THRESHOLD
 CLUSTER_NAME = 'vbrowsers'
 
 def get_latest_task_definition(family: str) -> str:
@@ -55,6 +56,8 @@ def run_browser_task(browser_type, container_uuid, auto_open_url, username, sess
             'environment': [
                 {'name': 'UUID',     'value': container_uuid},
                 {'name': 'USERNAME', 'value': username},
+                {'name': 'CUSTOM_DOMAIN', 'value': CUSTOM_DOMAIN},
+                {'name': 'DEFAULT_IDLE_THRESHOLD', 'value': DEFAULT_IDLE_THRESHOLD},
             ]
         }]
     }

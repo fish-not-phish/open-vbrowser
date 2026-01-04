@@ -1,2 +1,0 @@
-#!/bin/bash
-/app/Browser/mullvadbrowser -profile $HOME/lsio $FF_OPEN_URL
