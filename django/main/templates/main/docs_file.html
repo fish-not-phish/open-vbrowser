@@ -137,9 +137,6 @@
         <div class="me-4">
           <h1 class="pb-1">File Management</h1>
           <p class="text-muted fs-lg mb-2">Upload and download settings.</p>
-          <div class="alert alert-danger" role="alert">
-            Only Professional tier users will be able to perform file uploads and downloads.
-          </div>
         </div>
       </div>
 
@@ -160,48 +157,33 @@
                 </div>
               </li>
             </ul>
-            <li>Click the "Filebrowser" icon.</li>
+            <li>Click the "Files" section on the sidebar.</li>
             <ul>
               <li>
                 <div class="gallery" style="max-width: 416px;">
-                  <a href="{% static 'images/filebrowser.jpg' %}" class="gallery-item rounded-3" data-sub-html='<h6 class="text-light">Filebrowser Icon</h6>'>
-                    <img src="{% static 'images/filebrowser.jpg' %}" alt="Gallery thumbnail">
-                    <div class="gallery-item-caption fs-sm fw-medium">Filebrowser Icon</div>
+                  <a href="{% static 'images/file-management.jpg' %}" class="gallery-item rounded-3" data-sub-html='<h6 class="text-light">Files Section</h6>'>
+                    <img src="{% static 'images/file-management.jpg' %}" alt="Gallery thumbnail">
+                    <div class="gallery-item-caption fs-sm fw-medium">Files Section</div>
                   </a>
                 </div>
               </li>
             </ul>
-            <li>Click the "Downloads" folder to change to this folder location.
-              <div class="alert alert-danger" role="alert">
-                Users are only allowed to upload/download to/from the Downloads folder.
+            <li>Click the "Upload Files" button to open an internal file explorer.
+              <div class="alert d-flex alert-warning" role="alert">
+                <i class="bx bx-error lead me-3"></i>
+                <div>
+                  Users will only be able to upload files to the <code>/config/Desktop</code> directory.
+                </div>
+              </div>
+              <div class="alert d-flex alert-warning" role="alert">
+                <i class="bx bx-error lead me-3"></i>
+                <div>
+                   Drag and drop is currently not supported.
+                </div>
               </div>
             </li>
-            <ul>
-              <li>
-                <div class="gallery" style="max-width: 416px;">
-                  <a href="{% static 'images/donwloads.jpg' %}" class="gallery-item rounded-3" data-sub-html='<h6 class="text-light">Downloads Folder</h6>'>
-                    <img src="{% static 'images/donwloads.jpg' %}" alt="Gallery thumbnail">
-                    <div class="gallery-item-caption fs-sm fw-medium">Downloads Folder</div>
-                  </a>
-                </div>
-              </li>
-            </ul>
-            <li>Upload file one of two ways.
-              <ol>
-                <li>Click the "Upload Files" button.</li>
-                <li>Drag and drop a file into the file browser window.
-                  <ul>
-                    <li>
-                      <div class="gallery" style="max-width: 416px;">
-                        <a href="{% static 'images/drag-n-drop.png' %}" class="gallery-item rounded-3" data-sub-html='<h6 class="text-light">Upload File</h6>'>
-                          <img src="{% static 'images/drag-n-drop.png' %}" alt="Gallery thumbnail">
-                          <div class="gallery-item-caption fs-sm fw-medium">Upload File</div>
-                        </a>
-                      </div>
-                    </li>
-                  </ul>
-                </li>
-              </ol>
+            <li>
+              A file explorer will populate, select the file(s) to upload and submit.
             </li>
           </ol>
         </div>
@@ -224,49 +206,35 @@
                 </div>
               </li>
             </ul>
-            <li>Click the "Filebrowser" icon.</li>
+            <li>Click the "Files" section on the sidebar.</li>
             <ul>
               <li>
                 <div class="gallery" style="max-width: 416px;">
-                  <a href="{% static 'images/filebrowser.jpg' %}" class="gallery-item rounded-3" data-sub-html='<h6 class="text-light">Filebrowser Icon</h6>'>
-                    <img src="{% static 'images/filebrowser.jpg' %}" alt="Gallery thumbnail">
-                    <div class="gallery-item-caption fs-sm fw-medium">Filebrowser Icon</div>
+                  <a href="{% static 'images/file-management.jpg' %}" class="gallery-item rounded-3" data-sub-html='<h6 class="text-light">Files Section</h6>'>
+                    <img src="{% static 'images/file-management.jpg' %}" alt="Gallery thumbnail">
+                    <div class="gallery-item-caption fs-sm fw-medium">Files Section</div>
                   </a>
                 </div>
               </li>
             </ul>
-            <li>Click the "Downloads" folder to change to this folder location.
-              <div class="alert alert-danger" role="alert">
-                Users are only allowed to upload/download to/from the Downloads folder.
+            <li>Click the "Download Files" button to open an internal file explorer.
+              <div class="alert d-flex alert-warning" role="alert">
+                <i class="bx bx-error lead me-3"></i>
+                <div>
+                  Users will only have access to the <code>/config/Desktop</code> directory and children directories.
+                </div>
               </div>
             </li>
-            <ul>
-              <li>
-                <div class="gallery" style="max-width: 416px;">
-                  <a href="{% static 'images/donwloads.jpg' %}" class="gallery-item rounded-3" data-sub-html='<h6 class="text-light">Downloads Folder</h6>'>
-                    <img src="{% static 'images/donwloads.jpg' %}" alt="Gallery thumbnail">
-                    <div class="gallery-item-caption fs-sm fw-medium">Downloads Folder</div>
-                  </a>
-                </div>
-              </li>
-            </ul>
+            <li>
+              Files will be zipped using 7zip and have a password of <code>infected</code>. These files may be dangerous.
+            </li>
             <li>Click on desired file to download.
-              <div class="alert alert-secondary" role="alert">
-                Users may download single files or any file archive. However, downloading un-archived folders is not possible.
+              <div class="alert d-flex alert-danger" role="alert">
+                <i class="bx bx-block lead me-3"></i>
+                <div>
+                  By performing this action, you will be actively downloading files from the session into a password-protected 7-ZIP file. These files are offered “as-is” and may contain malicious content. By downloading, you acknowledge and accept all risks, confirm you have the necessary knowledge to handle potentially harmful files, and agree that you are solely responsible for any resulting damage or loss. We disclaim all liability for any security breaches, malware, or other adverse effects. It is strongly recommended that you use up-to-date antivirus software and other security measures.
+                </div>
               </div>
-              <div class="alert alert-danger" role="alert">
-                By performing this action, you will be actively downloading files from the session into a non-password-protected ZIP file. These files are offered “as-is” and may contain malicious content. By downloading, you acknowledge and accept all risks, confirm you have the necessary knowledge to handle potentially harmful files, and agree that you are solely responsible for any resulting damage or loss. We disclaim all liability for any security breaches, malware, or other adverse effects. It is strongly recommended that you use up-to-date antivirus software and other security measures.
-              </div>
-              <ul>
-                <li>
-                  <div class="gallery" style="max-width: 416px;">
-                    <a href="{% static 'images/download.png' %}" class="gallery-item rounded-3" data-sub-html='<h6 class="text-light">Download File</h6>'>
-                      <img src="{% static 'images/download.png' %}" alt="Gallery thumbnail">
-                      <div class="gallery-item-caption fs-sm fw-medium">Download File</div>
-                    </a>
-                  </div>
-                </li>
-              </ul>
             </li>
           </ol>
         </div>
