@@ -9,6 +9,8 @@
 [![License](https://img.shields.io/github/license/fish-not-phish/open-vbrowser?color=green)](LICENSE) 
 ![Status](https://img.shields.io/badge/status-Alpha-red)
 
+Visit https://docs.vbrowser.io/ for official and in-depth documentation.
+
 vBrowser was initially created by **Joseph Fisher**, a Cyber Threat Intelligence manager, to assist with deep and dark web investigations while not exposing identity and remaining covert. The vBrowser team realized that many SOCs lack the tools or sandboxed environments needed for proper investigations. vBrowser provides companies and individuals access to this infrastructure at a minimal price, lowering the barrier for those who cannot afford expensive subscription services with paywalled features. Our ultimate goal is to give back to the community-enhancing cyber investigations and helping keep people safe.
 
 
