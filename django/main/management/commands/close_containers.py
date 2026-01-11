@@ -12,11 +12,11 @@ class Command(BaseCommand):
         active_containers = Container.objects.filter(active=True)
         containers_without_user_and_not_active = Container.objects.filter(user__isnull=True, active=False)
 
-        # Self-heal: Identify containers without a start time older than 3 minutes
+        # Self-heal: Identify containers without a start time older than 5 minutes
         stale_containers = Container.objects.filter(
-            date_created__lte=now - datetime.timedelta(minutes=3),
+            date_created__lte=now - datetime.timedelta(minutes=5),
             start_time__isnull=True
-        ).exclude(type="remnux")
+        )
 
         for container in stale_containers:
             print(f"Self-healing container: {container.uuid}")
@@ -43,7 +43,7 @@ class Command(BaseCommand):
             container = open_container.container
 
             # skip API-session containers
-            if container.name == "api_session" or container.type == "remnux":
+            if container.name == "api_session":
                 continue
 
             print(f"AFK Stop: {container.subdomain} (last_ping at {open_container.last_ping_at})")
