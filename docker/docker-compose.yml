@@ -1,0 +1,157 @@
+services:
+  ovb_postgres:
+    image: postgres:16-alpine
+    container_name: ovb_postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${DB_NAME:-ovb}
+      POSTGRES_USER: ${DB_USER:-ovb}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-changeme}
+    volumes:
+      - ovb_postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-ovb} -d ${DB_NAME:-ovb}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  ovb_redis:
+    image: redis:7-alpine
+    container_name: ovb_redis
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  ovb_backend:
+    build: ../backend
+    container_name: ovb_backend
+    command: ["--migrate", "gunicorn", "backend.wsgi:application", "--bind", "0.0.0.0:8000", "--workers", "4"]
+    restart: unless-stopped
+    depends_on:
+      ovb_postgres:
+        condition: service_healthy
+      ovb_redis:
+        condition: service_healthy
+    environment:
+      DJANGO_SECRET_KEY: ${DJANGO_SECRET_KEY}
+      DEBUG: ${DEBUG:-0}
+      DEV_MODE: ${DEV_MODE:-0}
+      CUSTOM_DOMAIN: ${CUSTOM_DOMAIN}
+      ALLOWED_HOSTS: ${ALLOWED_HOSTS}
+      DB_NAME: ${DB_NAME:-ovb}
+      DB_USER: ${DB_USER:-ovb}
+      DB_PASSWORD: ${DB_PASSWORD:-changeme}
+      DB_HOST: ${DB_HOST:-ovb_postgres}
+      DB_PORT: ${DB_PORT:-5432}
+      REDIS_URL: ${REDIS_URL:-redis://ovb_redis:6379/0}
+      APP_NAME: ${APP_NAME:-Open vBrowser}
+      EMAIL_ENABLED: ${EMAIL_ENABLED:-0}
+      SECURE_SSL_REDIRECT: ${SECURE_SSL_REDIRECT:-1}
+      SESSION_COOKIE_SECURE: ${SESSION_COOKIE_SECURE:-1}
+      CSRF_COOKIE_SECURE: ${CSRF_COOKIE_SECURE:-1}
+      TIME_ZONE: ${TIME_ZONE:-UTC}
+      LOGGER_ENABLED: ${LOGGER_ENABLED:-0}
+      DJANGO_SUPERUSER_EMAIL: ${DJANGO_SUPERUSER_EMAIL}
+      DJANGO_SUPERUSER_PASSWORD: ${DJANGO_SUPERUSER_PASSWORD}
+      VBROWSERS_PATH: ${VBROWSERS_PATH:-/app/vbrowsers}
+      DEFAULT_IDLE_THRESHOLD: ${DEFAULT_IDLE_THRESHOLD:-10}
+      FARGATE_VCPU_PER_HOUR_USD: ${FARGATE_VCPU_PER_HOUR_USD:-0.04048}
+      FARGATE_MEMORY_GB_PER_HOUR_USD: ${FARGATE_MEMORY_GB_PER_HOUR_USD:-0.004445}
+      FARGATE_SPOT_DISCOUNT: ${FARGATE_SPOT_DISCOUNT:-0.70}
+      AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID}
+      AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY}
+      AWS_REGION: ${AWS_REGION}
+      ECR_REGISTRY: ${ECR_REGISTRY}
+      SUBNET_ID: ${SUBNET_ID}
+      SECURITY_GROUP_ID: ${SECURITY_GROUP_ID}
+      CF_Token: ${CF_Token}
+      CF_Zone_ID: ${CF_Zone_ID}
+    ports:
+      - "8000:8000"
+    volumes:
+      - ovb_media:/app/media
+
+  ovb_worker:
+    build: ../backend
+    container_name: ovb_worker
+    command: ["celery", "-A", "backend", "worker", "--loglevel=info", "--concurrency=4", "--uid=nobody", "--gid=nogroup"]
+    restart: unless-stopped
+    depends_on:
+      ovb_postgres:
+        condition: service_healthy
+      ovb_redis:
+        condition: service_healthy
+      ovb_backend:
+        condition: service_started
+    environment:
+      DJANGO_SECRET_KEY: ${DJANGO_SECRET_KEY}
+      DEBUG: ${DEBUG:-0}
+      DEV_MODE: ${DEV_MODE:-0}
+      CUSTOM_DOMAIN: ${CUSTOM_DOMAIN}
+      ALLOWED_HOSTS: ${ALLOWED_HOSTS}
+      DB_NAME: ${DB_NAME:-ovb}
+      DB_USER: ${DB_USER:-ovb}
+      DB_PASSWORD: ${DB_PASSWORD:-changeme}
+      DB_HOST: ${DB_HOST:-ovb_postgres}
+      DB_PORT: ${DB_PORT:-5432}
+      REDIS_URL: ${REDIS_URL:-redis://ovb_redis:6379/0}
+      APP_NAME: ${APP_NAME:-Open vBrowser}
+      TIME_ZONE: ${TIME_ZONE:-UTC}
+      LOGGER_ENABLED: ${LOGGER_ENABLED:-0}
+      VBROWSERS_PATH: ${VBROWSERS_PATH:-/app/vbrowsers}
+      DEFAULT_IDLE_THRESHOLD: ${DEFAULT_IDLE_THRESHOLD:-10}
+      FARGATE_VCPU_PER_HOUR_USD: ${FARGATE_VCPU_PER_HOUR_USD:-0.04048}
+      FARGATE_MEMORY_GB_PER_HOUR_USD: ${FARGATE_MEMORY_GB_PER_HOUR_USD:-0.004445}
+      FARGATE_SPOT_DISCOUNT: ${FARGATE_SPOT_DISCOUNT:-0.70}
+      AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID}
+      AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY}
+      AWS_REGION: ${AWS_REGION}
+      ECR_REGISTRY: ${ECR_REGISTRY}
+      SUBNET_ID: ${SUBNET_ID}
+      SECURITY_GROUP_ID: ${SECURITY_GROUP_ID}
+      CF_Token: ${CF_Token}
+      CF_Zone_ID: ${CF_Zone_ID}
+
+  ovb_beat:
+    build: ../backend
+    container_name: ovb_beat
+    command: ["celery", "-A", "backend", "beat", "--loglevel=info", "--scheduler", "django_celery_beat.schedulers:DatabaseScheduler", "--uid=nobody", "--gid=nogroup"]
+    restart: unless-stopped
+    depends_on:
+      ovb_postgres:
+        condition: service_healthy
+      ovb_redis:
+        condition: service_healthy
+      ovb_backend:
+        condition: service_started
+    environment:
+      DJANGO_SECRET_KEY: ${DJANGO_SECRET_KEY}
+      DEBUG: ${DEBUG:-0}
+      CUSTOM_DOMAIN: ${CUSTOM_DOMAIN}
+      DB_NAME: ${DB_NAME:-ovb}
+      DB_USER: ${DB_USER:-ovb}
+      DB_PASSWORD: ${DB_PASSWORD:-changeme}
+      DB_HOST: ${DB_HOST:-ovb_postgres}
+      DB_PORT: ${DB_PORT:-5432}
+      REDIS_URL: ${REDIS_URL:-redis://ovb_redis:6379/0}
+      TIME_ZONE: ${TIME_ZONE:-UTC}
+
+  ovb_frontend:
+    build:
+      context: ../frontend
+      args:
+        NEXT_PUBLIC_BASE_URL: ${NEXT_PUBLIC_BASE_URL:-http://127.0.0.1:8000/api/}
+        NEXT_PUBLIC_BASE_URL_ACCOUNTS: ${NEXT_PUBLIC_BASE_URL_ACCOUNTS:-http://127.0.0.1:8000/}
+    container_name: ovb_frontend
+    restart: unless-stopped
+    depends_on:
+      - ovb_backend
+    ports:
+      - "3000:3000"
+
+volumes:
+  ovb_postgres_data:
+  ovb_media:

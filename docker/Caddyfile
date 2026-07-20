@@ -1,0 +1,31 @@
+# Replace example.com with your domain (CUSTOM_DOMAIN).
+# Caddy automatically obtains and renews a Let's Encrypt TLS certificate.
+
+example.com {
+    # Backend paths
+    handle /api/* {
+        reverse_proxy ovb_backend:8000
+    }
+    handle /ovb-admin/* {
+        reverse_proxy ovb_backend:8000
+    }
+    handle /accounts/* {
+        reverse_proxy ovb_backend:8000
+    }
+    handle /static/* {
+        reverse_proxy ovb_backend:8000
+    }
+    handle /media/* {
+        reverse_proxy ovb_backend:8000
+    }
+
+    # WebSocket (Django Channels)
+    handle /ws/* {
+        reverse_proxy ovb_backend:8000
+    }
+
+    # Frontend (catch-all)
+    handle {
+        reverse_proxy ovb_frontend:3000
+    }
+}

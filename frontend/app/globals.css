@@ -1,0 +1,197 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+
+@custom-variant dark (&:is(.dark *));
+
+@theme inline {
+  --color-background:               var(--background);
+  --color-foreground:               var(--foreground);
+  --font-sans:                      var(--font-share-tech-mono);
+  --font-mono:                      var(--font-share-tech-mono);
+  --color-sidebar-ring:             var(--sidebar-ring);
+  --color-sidebar-border:           var(--sidebar-border);
+  --color-sidebar-accent-foreground:var(--sidebar-accent-foreground);
+  --color-sidebar-accent:           var(--sidebar-accent);
+  --color-sidebar-primary-foreground:var(--sidebar-primary-foreground);
+  --color-sidebar-primary:          var(--sidebar-primary);
+  --color-sidebar-foreground:       var(--sidebar-foreground);
+  --color-sidebar:                  var(--sidebar);
+  --color-chart-5:                  var(--chart-5);
+  --color-chart-4:                  var(--chart-4);
+  --color-chart-3:                  var(--chart-3);
+  --color-chart-2:                  var(--chart-2);
+  --color-chart-1:                  var(--chart-1);
+  --color-ring:                     var(--ring);
+  --color-input:                    var(--input);
+  --color-border:                   var(--border);
+  --color-destructive:              var(--destructive);
+  --color-accent-foreground:        var(--accent-foreground);
+  --color-accent:                   var(--accent);
+  --color-muted-foreground:         var(--muted-foreground);
+  --color-muted:                    var(--muted);
+  --color-secondary-foreground:     var(--secondary-foreground);
+  --color-secondary:                var(--secondary);
+  --color-primary-foreground:       var(--primary-foreground);
+  --color-primary:                  var(--primary);
+  --color-popover-foreground:       var(--popover-foreground);
+  --color-popover:                  var(--popover);
+  --color-card-foreground:          var(--card-foreground);
+  --color-card:                     var(--card);
+  --radius-sm:  calc(var(--radius) - 4px);
+  --radius-md:  calc(var(--radius) - 2px);
+  --radius-lg:  var(--radius);
+  --radius-xl:  calc(var(--radius) + 2px);
+  --radius-2xl: calc(var(--radius) + 4px);
+  --radius-3xl: calc(var(--radius) + 6px);
+  --radius-4xl: calc(var(--radius) + 8px);
+}
+
+/* ── Single retro dark theme ───────────────────────────────────────────────── */
+:root {
+  --radius: 0.2rem;
+
+  /* raw palette — exact values from functions.css */
+  --pink:        #CF7287;
+  --pink-dim:    #7a5060;
+  --pink-glow:   #CF728755;   /* 0x55 / 255 ≈ 0.333 */
+  --bg:          #0d0d14;
+  --surface:     #12121e;
+  --surface-2:   #1a1a2e;
+
+  /* semantic tokens */
+  --background:           var(--bg);
+  --foreground:           var(--pink);
+
+  --card:                 var(--surface);
+  --card-foreground:      var(--pink);
+
+  --popover:              var(--surface);
+  --popover-foreground:   var(--pink);
+
+  --primary:              var(--pink);
+  --primary-foreground:   var(--bg);
+
+  --secondary:            var(--surface-2);
+  --secondary-foreground: var(--pink);
+
+  --muted:                var(--surface-2);
+  --muted-foreground:     var(--pink-dim);
+
+  --accent:               var(--surface-2);
+  --accent-foreground:    var(--pink);
+
+  --destructive:          oklch(0.65 0.22 15);
+  --border:               #CF728733;
+  --input:                #CF728766;
+  --ring:                 #CF728799;
+
+  --chart-1: var(--pink);
+  --chart-2: oklch(0.7 0.15 280);
+  --chart-3: oklch(0.7 0.15 160);
+  --chart-4: oklch(0.75 0.18 60);
+  --chart-5: oklch(0.7 0.18 200);
+
+  --sidebar:                    var(--surface);
+  --sidebar-foreground:         var(--pink);
+  --sidebar-primary:            var(--pink);
+  --sidebar-primary-foreground: var(--bg);
+  --sidebar-accent:             var(--surface-2);
+  --sidebar-accent-foreground:  var(--pink);
+  --sidebar-border:             #CF728733;
+  --sidebar-ring:               #CF728799;
+}
+
+/* keep .dark pointing to the same values so shadcn dark-mode components work */
+.dark {
+  --background:           var(--bg);
+  --foreground:           var(--pink);
+  --card:                 var(--surface);
+  --card-foreground:      var(--pink);
+  --popover:              var(--surface);
+  --popover-foreground:   var(--pink);
+  --primary:              var(--pink);
+  --primary-foreground:   var(--bg);
+  --secondary:            var(--surface-2);
+  --secondary-foreground: var(--pink);
+  --muted:                var(--surface-2);
+  --muted-foreground:     var(--pink-dim);
+  --accent:               var(--surface-2);
+  --accent-foreground:    var(--pink);
+  --destructive:          oklch(0.65 0.22 15);
+  --border:               #CF728733;
+  --input:                #CF728766;
+  --ring:                 #CF728799;
+  --sidebar:                    var(--surface);
+  --sidebar-foreground:         var(--pink);
+  --sidebar-primary:            var(--pink);
+  --sidebar-primary-foreground: var(--bg);
+  --sidebar-accent:             var(--surface-2);
+  --sidebar-accent-foreground:  var(--pink);
+  --sidebar-border:             #CF728733;
+  --sidebar-ring:               #CF728799;
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+
+  html, body {
+    @apply bg-background text-foreground;
+    font-family: 'Share Tech Mono', 'Courier New', monospace;
+  }
+
+  /* ── Scrollbars ─────────────────────────────────────────────────────────── */
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  ::-webkit-scrollbar-thumb {
+    background: #CF728744;
+    border-radius: 999px;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: #CF728799;
+  }
+  ::-webkit-scrollbar-corner {
+    background: transparent;
+  }
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: #CF728744 transparent;
+  }
+
+  /* Text selection */
+  ::selection {
+    background: #CF728744;
+    color: inherit;
+  }
+
+  /* BlockNote: transparent editor background */
+  .bn-root,
+  .bn-root[data-color-scheme=dark] {
+    --bn-colors-editor-background: transparent !important;
+  }
+  .bn-editor {
+    background-color: transparent !important;
+  }
+
+  /* scanline overlay */
+  body::before {
+    content: "";
+    position: fixed;
+    inset: 0;
+    background: repeating-linear-gradient(
+      0deg,
+      transparent,
+      transparent 2px,
+      rgba(0, 0, 0, 0.06) 2px,
+      rgba(0, 0, 0, 0.06) 4px
+    );
+    pointer-events: none;
+    z-index: 9999;
+  }
+}

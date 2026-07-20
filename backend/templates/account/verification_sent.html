@@ -1,0 +1,112 @@
+{% load i18n %}
+{% load allauth %}
+{% block content %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+  <title>{% trans "Verify Your Email Address" %}</title>
+  <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --pink: #CF7287;
+      --pink-dim: #7a5060;
+      --pink-glow: rgba(207, 114, 135, 0.33);
+      --bg: #0d0d14;
+      --surface: #12121e;
+      --border: rgba(207, 114, 135, 0.2);
+    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body {
+      height: 100%;
+      font-family: 'Share Tech Mono', 'Courier New', monospace;
+      background-color: var(--bg);
+      color: var(--pink);
+    }
+    body {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 40px 16px;
+      background-image: repeating-linear-gradient(0deg,rgba(0,0,0,0.06) 0px,rgba(0,0,0,0.06) 1px,transparent 1px,transparent 2px);
+    }
+    a { color: var(--pink); text-decoration: none; }
+    a:hover { color: #e08090; text-decoration: underline; }
+    .card {
+      width: 100%;
+      max-width: 380px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      padding: 32px 28px;
+      box-shadow: 0 0 32px var(--pink-glow);
+      text-align: center;
+    }
+    .logo-wrap { margin-bottom: 24px; }
+    .logo-wrap img {
+      max-width: 200px;
+      height: auto;
+      filter: brightness(0) saturate(100%) invert(58%) sepia(30%) saturate(500%) hue-rotate(300deg) brightness(95%);
+    }
+    h1 {
+      font-size: 1.1rem;
+      font-weight: normal;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      margin-bottom: 20px;
+    }
+    p {
+      font-size: 0.82rem;
+      color: var(--pink-dim);
+      line-height: 1.7;
+      margin-bottom: 14px;
+    }
+    .copyright {
+      font-size: 0.72rem;
+      color: var(--pink-dim);
+      margin-top: 28px;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="card">
+
+    <div class="logo-wrap">
+      <img
+        src="https://raw.githubusercontent.com/vbrowser/logos/refs/heads/main/logo-vbrowser-transparent.png"
+        alt="Company"
+      >
+    </div>
+
+    <h1>{% trans "Verify Your Email Address" %}</h1>
+
+    <p>
+      {% blocktrans %}
+        This part of the site requires us to verify that you are who you claim to be.
+        For this purpose, we require that you verify ownership of your email address.
+      {% endblocktrans %}
+    </p>
+
+    <p>
+      {% blocktrans %}
+        We have sent you an email with a verification link.
+        Please click the link inside that email.
+        If you do not see it in your inbox, check your spam folder.
+      {% endblocktrans %}
+    </p>
+
+    <p>
+      {% blocktrans %}
+        If you do not receive the email within a few minutes, please contact support.
+      {% endblocktrans %}
+    </p>
+
+    <p class="copyright">Copyright &copy; Company Name. All Rights Reserved.</p>
+
+  </div>
+
+</body>
+</html>
+{% endblock content %}

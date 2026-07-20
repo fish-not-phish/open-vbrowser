@@ -1,0 +1,46 @@
+# Development overrides — layer on top of docker-compose.yml:
+#
+#   docker compose -f docker-compose.yml -f docker-compose.dev.yml up
+#
+# Changes from production:
+#   - Django runs `runserver` (auto-reload on code change) instead of gunicorn
+#   - Next.js runs `bun dev` (HMR) instead of the pre-built standalone server
+#   - Host source directories are bind-mounted into both containers so edits
+#     on the host are reflected immediately inside the container
+#   - node_modules is kept in an anonymous volume so the host directory
+#     (which may be empty or have a different platform's binaries) does not
+#     shadow the container-installed packages
+
+services:
+  ovb_backend:
+    # Use daphne (ASGI) instead of runserver so Django Channels WebSockets work in dev.
+    command: ["--migrate", "daphne", "-b", "0.0.0.0", "-p", "8000", "backend.asgi:application"]
+    # Install any new requirements before starting (handles packages added after image build)
+    entrypoint: ["/bin/sh", "-c", "pip install -q -r /app/requirements.txt && exec /app/entrypoint.sh \"$@\"", "--"]
+    volumes:
+      - ../backend:/app
+
+  ovb_worker:
+    volumes:
+      - ../backend:/app
+
+  ovb_beat:
+    volumes:
+      - ../backend:/app
+
+  ovb_frontend:
+    # Override the production image with a dev-friendly one that includes
+    # all dependencies and source so `bun dev` can run.
+    build:
+      context: ../frontend
+      target: deps          # stop at the deps stage — no build needed for dev
+    command: ["bun", "run", "dev"]
+    environment:
+      - NEXT_TELEMETRY_DISABLED=1
+      - NODE_ENV=development
+    volumes:
+      - ../frontend:/app
+      - ovb_frontend_node_modules:/app/node_modules
+
+volumes:
+  ovb_frontend_node_modules:

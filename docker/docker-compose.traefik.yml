@@ -1,0 +1,140 @@
+services:
+  ovb_postgres:
+    image: postgres:16-alpine
+    container_name: ovb_postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${DB_NAME:-ovb}
+      POSTGRES_USER: ${DB_USER:-ovb}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-changeme}
+    volumes:
+      - ovb_postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-ovb} -d ${DB_NAME:-ovb}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  ovb_redis:
+    image: redis:7-alpine
+    container_name: ovb_redis
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  ovb_backend:
+    build: ../backend
+    container_name: ovb_backend
+    # --migrate runs migrations + periodic-task setup + superuser creation
+    # before handing off to gunicorn
+    command: ["--migrate", "daphne", "-b", "0.0.0.0", "-p", "8000", "backend.asgi:application"]
+    restart: unless-stopped
+    depends_on:
+      ovb_postgres:
+        condition: service_healthy
+      ovb_redis:
+        condition: service_healthy
+    env_file: .env
+    ports:
+      - "8000:8000"
+    volumes:
+      - ovb_media:/app/media
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.services.obv-backend-svc.loadbalancer.server.port=8000"
+      # /api/
+      - "traefik.http.routers.obv-backend-api.rule=Host(`${CUSTOM_DOMAIN}`) && PathPrefix(`/api/`)"
+      - "traefik.http.routers.obv-backend-api.entrypoints=websecure"
+      - "traefik.http.routers.obv-backend-api.tls.certresolver=cloudflare"
+      - "traefik.http.routers.obv-backend-api.service=obv-backend-svc"
+      - "traefik.http.routers.obv-backend-api.priority=20"
+      # /ovb-admin/ — also match without trailing slash and redirect
+      - "traefik.http.routers.obv-backend-admin.rule=Host(`${CUSTOM_DOMAIN}`) && PathPrefix(`/ovb-admin`)"
+      - "traefik.http.routers.obv-backend-admin.entrypoints=websecure"
+      - "traefik.http.routers.obv-backend-admin.tls.certresolver=cloudflare"
+      - "traefik.http.routers.obv-backend-admin.service=obv-backend-svc"
+      - "traefik.http.routers.obv-backend-admin.priority=20"
+      # /accounts/
+      - "traefik.http.routers.obv-backend-accounts.rule=Host(`${CUSTOM_DOMAIN}`) && PathPrefix(`/accounts/`)"
+      - "traefik.http.routers.obv-backend-accounts.entrypoints=websecure"
+      - "traefik.http.routers.obv-backend-accounts.tls.certresolver=cloudflare"
+      - "traefik.http.routers.obv-backend-accounts.service=obv-backend-svc"
+      - "traefik.http.routers.obv-backend-accounts.priority=20"
+      # /static/
+      - "traefik.http.routers.obv-backend-static.rule=Host(`${CUSTOM_DOMAIN}`) && PathPrefix(`/static/`)"
+      - "traefik.http.routers.obv-backend-static.entrypoints=websecure"
+      - "traefik.http.routers.obv-backend-static.tls.certresolver=cloudflare"
+      - "traefik.http.routers.obv-backend-static.service=obv-backend-svc"
+      - "traefik.http.routers.obv-backend-static.priority=20"
+      # /media/
+      - "traefik.http.routers.obv-backend-media.rule=Host(`${CUSTOM_DOMAIN}`) && PathPrefix(`/media/`)"
+      - "traefik.http.routers.obv-backend-media.entrypoints=websecure"
+      - "traefik.http.routers.obv-backend-media.tls.certresolver=cloudflare"
+      - "traefik.http.routers.obv-backend-media.service=obv-backend-svc"
+      - "traefik.http.routers.obv-backend-media.priority=20"
+      # /ws/ — WebSocket upgrade
+      - "traefik.http.routers.obv-backend-ws.rule=Host(`${CUSTOM_DOMAIN}`) && PathPrefix(`/ws/`)"
+      - "traefik.http.routers.obv-backend-ws.entrypoints=websecure"
+      - "traefik.http.routers.obv-backend-ws.tls.certresolver=cloudflare"
+      - "traefik.http.routers.obv-backend-ws.service=obv-backend-svc"
+      - "traefik.http.routers.obv-backend-ws.priority=20"
+
+  ovb_worker:
+    build: ../backend
+    container_name: ovb_worker
+    # No --migrate: worker waits for ovb_backend to finish migrations first
+    command: ["celery", "-A", "backend", "worker", "--loglevel=info", "--concurrency=4", "--uid=nobody", "--gid=nogroup"]
+    restart: unless-stopped
+    depends_on:
+      ovb_postgres:
+        condition: service_healthy
+      ovb_redis:
+        condition: service_healthy
+      ovb_backend:
+        condition: service_started
+    env_file: .env
+
+  ovb_beat:
+    build: ../backend
+    container_name: ovb_beat
+    # No --migrate: beat waits for ovb_backend to finish migrations first
+    command: ["celery", "-A", "backend", "beat", "--loglevel=info", "--scheduler", "django_celery_beat.schedulers:DatabaseScheduler", "--uid=nobody", "--gid=nogroup"]
+    restart: unless-stopped
+    depends_on:
+      ovb_postgres:
+        condition: service_healthy
+      ovb_redis:
+        condition: service_healthy
+      ovb_backend:
+        condition: service_started
+    env_file: .env
+
+  ovb_frontend:
+    build:
+      context: ../frontend
+      args:
+        NEXT_PUBLIC_BASE_URL: ${NEXT_PUBLIC_BASE_URL:-http://127.0.0.1:8000/api/}
+        NEXT_PUBLIC_BASE_URL_ACCOUNTS: ${NEXT_PUBLIC_BASE_URL_ACCOUNTS:-http://127.0.0.1:8000/}
+    container_name: ovb_frontend
+    restart: unless-stopped
+    depends_on:
+      - ovb_backend
+    env_file: .env
+    ports:
+      - "3000:3000"
+    labels:
+      - "traefik.enable=true"
+      # Catch-all — lowest priority (10), everything not matched above
+      - "traefik.http.routers.ovb-frontend.rule=Host(`${CUSTOM_DOMAIN}`)"
+      - "traefik.http.routers.ovb-frontend.entrypoints=websecure"
+      - "traefik.http.routers.ovb-frontend.tls.certresolver=cloudflare"
+      - "traefik.http.routers.ovb-frontend.service=ovb-frontend-svc"
+      - "traefik.http.routers.ovb-frontend.priority=10"
+      - "traefik.http.services.ovb-frontend-svc.loadbalancer.server.port=3000"
+
+volumes:
+  ovb_postgres_data:
+  ovb_media:

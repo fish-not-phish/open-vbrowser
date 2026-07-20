@@ -1,0 +1,67 @@
+aws_region = "us-west-1"
+project_name = "ovb"
+cluster_name = "ovb-browsers"
+common_tags = {
+  Project     = "open-vbrowser"
+  Environment = "production"
+  ManagedBy   = "terraform"
+}
+
+vpc_cidr            = "10.0.0.0/16"
+public_subnet_cidrs = ["10.0.0.0/24", "10.0.1.0/24"]
+
+ecr_repository_name      = "ovb-browsers"
+ecr_image_tag_mutability = "MUTABLE"
+ecr_scan_on_push         = false
+
+iam_user_name      = "ovb-user"
+ecs_task_role_name = "ovbEcsTaskRole"
+
+container_insights_enabled = false
+capacity_providers         = ["FARGATE", "FARGATE_SPOT"]
+default_capacity_provider  = "FARGATE"
+
+docker_images = [
+  "brave",
+  "chrome",
+  "edge",
+  "firefox",
+  "floorp",
+  "kali",
+  "librewolf",
+  "mullvad",
+  "palemoon",
+  "pulse",
+  "tor",
+  "vivaldi",
+  "waterfox",
+  "zen",
+]
+
+task_cpu       = "512"
+task_memory    = "2048"
+container_port = 443
+
+task_resource_overrides = {
+  kali = {
+    cpu    = "2048"
+    memory = "4096"
+  }
+}
+
+log_retention_days  = 30
+log_driver          = "awslogs"
+log_mode            = "non-blocking"
+log_max_buffer_size = "25m"
+
+cpu_architecture        = "X86_64"
+operating_system_family = "LINUX"
+
+environment_variables = [
+  { name = "PUID", value = "1000" },
+  { name = "PGID", value = "1000" },
+  { name = "TZ",   value = "Etc/UTC" }
+]
+
+enable_soci_indexing   = true
+soci_image_tag_filters = "*:*"

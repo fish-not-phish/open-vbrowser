@@ -1,0 +1,34 @@
+{% extends "account/base_reauthenticate.html" %}
+{% load allauth %}
+{% load i18n %}
+
+{% block reauthenticate_content %}
+<style>
+  .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0,0,0,0); border: 0; }
+</style>
+
+{% url 'account_reauthenticate' as action_url %}
+<form method="post" action="{{ action_url }}" style="text-align:left;">
+  {% csrf_token %}
+
+  {% for field in form %}
+    <label for="{{ field.id_for_label }}" class="sr-only">{{ field.label }}</label>
+    <input
+      type="{{ field.field.widget.input_type }}"
+      name="{{ field.name }}"
+      id="{{ field.id_for_label }}"
+      class="form-control{% if field.errors %} is-invalid{% endif %}"
+      placeholder="{{ field.label }}"
+      {% if forloop.first %}autofocus{% endif %}
+      required
+    >
+    {% if field.errors %}
+      <div class="invalid-feedback">{{ field.errors|striptags }}</div>
+    {% endif %}
+  {% endfor %}
+
+  {{ redirect_field }}
+
+  <button class="btn-primary" type="submit">{% trans "Confirm" %}</button>
+</form>
+{% endblock reauthenticate_content %}

@@ -1,0 +1,14 @@
+# Never bake local secrets or dev overrides into the image.
+# NEXT_PUBLIC_* values are injected at build time via Docker ARGs in docker-compose.yml.
+.env.local
+.env.*.local
+.env
+
+# Runtime artifacts not needed in the image
+node_modules
+.next
+
+# Dev/tooling
+.git
+.gitignore
+README.md

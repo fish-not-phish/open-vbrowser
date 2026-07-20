@@ -1,0 +1,253 @@
+{% load allauth i18n %}
+{% block content %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+  <title>{% trans "Set Up Two-Factor Authentication" %}</title>
+  <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --pink: #CF7287;
+      --pink-dim: #7a5060;
+      --pink-glow: rgba(207, 114, 135, 0.33);
+      --bg: #0d0d14;
+      --surface: #12121e;
+      --surface-2: #1a1a2e;
+      --border: rgba(207, 114, 135, 0.2);
+      --input-border: rgba(207, 114, 135, 0.4);
+      --ring: rgba(207, 114, 135, 0.6);
+    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body {
+      min-height: 100%;
+      font-family: 'Share Tech Mono', 'Courier New', monospace;
+      background-color: var(--bg);
+      color: var(--pink);
+    }
+    body {
+      display: flex;
+      justify-content: center;
+      padding: 40px 16px;
+      background-image: repeating-linear-gradient(0deg,rgba(0,0,0,0.06) 0px,rgba(0,0,0,0.06) 1px,transparent 1px,transparent 2px);
+    }
+    a { color: var(--pink); text-decoration: none; }
+    a:hover { color: #e08090; text-decoration: underline; }
+    .card {
+      width: 100%;
+      max-width: 720px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      padding: 36px 32px;
+      box-shadow: 0 0 32px var(--pink-glow);
+    }
+    .logo-wrap { text-align: center; margin-bottom: 24px; }
+    .logo-wrap img {
+      max-width: 200px;
+      height: auto;
+      filter: brightness(0) saturate(100%) invert(58%) sepia(30%) saturate(500%) hue-rotate(300deg) brightness(95%);
+    }
+    h1 {
+      font-size: 1.1rem;
+      font-weight: normal;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      text-align: center;
+      margin-bottom: 12px;
+    }
+    .subtitle { font-size: 0.82rem; color: var(--pink-dim); text-align: center; margin-bottom: 20px; line-height: 1.7; }
+    .info-box {
+      background: var(--surface-2);
+      border: 1px solid var(--border);
+      border-radius: 2px;
+      padding: 14px 16px;
+      font-size: 0.82rem;
+      color: var(--pink-dim);
+      line-height: 1.7;
+      margin-bottom: 24px;
+    }
+    .info-box strong { color: var(--pink); }
+    h2 {
+      font-size: 0.88rem;
+      font-weight: normal;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      text-align: center;
+      margin-bottom: 16px;
+    }
+    .app-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      margin-bottom: 20px;
+    }
+    .app-card {
+      background: var(--surface-2);
+      border: 1px solid var(--border);
+      border-radius: 2px;
+      padding: 16px;
+      text-align: center;
+    }
+    .app-card h3 { font-size: 0.82rem; font-weight: bold; margin-bottom: 10px; color: var(--pink); }
+    .app-btn {
+      display: block;
+      width: 100%;
+      padding: 7px;
+      font-family: inherit;
+      font-size: 0.75rem;
+      color: var(--pink);
+      background: transparent;
+      border: 1px solid var(--border);
+      border-radius: 2px;
+      text-decoration: none;
+      text-align: center;
+      margin-bottom: 6px;
+      transition: border-color 0.15s, background 0.15s;
+    }
+    .app-btn:hover { border-color: var(--pink); background: rgba(207,114,135,0.08); text-decoration: none; color: var(--pink); }
+    .app-note { font-size: 0.75rem; color: var(--pink-dim); text-align: center; margin-bottom: 20px; }
+    hr { border: none; border-top: 1px solid var(--border); margin: 24px 0; }
+    ol { padding-left: 20px; margin-bottom: 20px; }
+    ol li { font-size: 0.82rem; color: var(--pink-dim); line-height: 1.8; }
+    .qr-box {
+      background: #fff;
+      border-radius: 4px;
+      padding: 16px;
+      text-align: center;
+      margin-bottom: 20px;
+    }
+    .qr-box img { max-width: 240px; height: auto; }
+    .form-group { margin-bottom: 16px; }
+    .form-label { display: block; font-size: 0.78rem; color: var(--pink-dim); margin-bottom: 6px; }
+    .form-control {
+      display: block;
+      width: 100%;
+      padding: 10px 12px;
+      font-size: 0.9rem;
+      font-family: inherit;
+      background: var(--surface-2);
+      color: var(--pink);
+      border: 1px solid var(--input-border);
+      border-radius: 2px;
+      outline: none;
+      transition: border-color 0.15s, box-shadow 0.15s;
+    }
+    .form-control:focus { border-color: var(--pink); box-shadow: 0 0 0 2px var(--ring); }
+    .form-control::placeholder { color: var(--pink-dim); }
+    .form-control:disabled { opacity: 0.5; cursor: default; }
+    .form-control.is-invalid { border-color: #cf4f4f; }
+    .form-hint { font-size: 0.72rem; color: var(--pink-dim); margin-top: 4px; }
+    .invalid-feedback { font-size: 0.78rem; color: #cf7272; margin-top: 4px; }
+    .btn-primary {
+      display: block;
+      width: 100%;
+      padding: 10px;
+      font-family: inherit;
+      font-size: 0.9rem;
+      font-weight: 600;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: var(--bg);
+      background-color: var(--pink);
+      border: none;
+      border-radius: 2px;
+      cursor: pointer;
+      margin-top: 12px;
+      transition: background-color 0.15s;
+    }
+    .btn-primary:hover { background-color: #e08090; outline: none; }
+    .copyright { font-size: 0.72rem; color: var(--pink-dim); text-align: center; margin-top: 28px; }
+  </style>
+</head>
+<body>
+
+  <div class="card">
+
+    <div class="logo-wrap">
+      <img
+        src="https://raw.githubusercontent.com/vbrowser/logos/refs/heads/main/logo-vbrowser-transparent.png"
+        alt="Company"
+      >
+    </div>
+
+    <h1>{% trans "Set Up Two-Factor Authentication" %}</h1>
+    <p class="subtitle">{% trans "This website requires an authenticator app to keep accounts secure." %}</p>
+
+    <div class="info-box">
+      <strong>{% trans "What is an authenticator app?" %}</strong><br>
+      {% trans "An authenticator app generates a temporary 6-digit code on your phone. You will enter this code each time you sign in." %}
+    </div>
+
+    <h2>{% trans "Recommended authenticator apps" %}</h2>
+
+    <div class="app-grid">
+      <div class="app-card">
+        <h3>Google Authenticator</h3>
+        <a href="https://apps.apple.com/us/app/google-authenticator/id388497605" target="_blank" class="app-btn">iPhone App Store</a>
+        <a href="https://play.google.com/store/apps/details?id=com.google.android.apps.authenticator2&hl=en_US" target="_blank" class="app-btn">Android Play Store</a>
+      </div>
+      <div class="app-card">
+        <h3>Microsoft Authenticator</h3>
+        <a href="https://apps.apple.com/us/app/microsoft-authenticator/id983156458" target="_blank" class="app-btn">iPhone App Store</a>
+        <a href="https://play.google.com/store/apps/details?id=com.azure.authenticator&hl=en_US" target="_blank" class="app-btn">Android Play Store</a>
+      </div>
+    </div>
+
+    <p class="app-note">{% trans "You only need to install one of these apps." %}</p>
+
+    <hr>
+
+    <h2>{% trans "How to set it up" %}</h2>
+
+    <ol>
+      <li>{% trans "Install Google Authenticator or Microsoft Authenticator on your phone." %}</li>
+      <li>{% trans "Open the app and choose Add Account or Scan QR Code." %}</li>
+      <li>{% trans "Scan the QR code shown below." %}</li>
+      <li>{% trans "Enter the 6-digit code generated by the app." %}</li>
+      <li>{% trans "Click Activate to finish setup." %}</li>
+    </ol>
+
+    {% url 'mfa_activate_totp' as action_url %}
+    <form method="post" action="{{ action_url }}">
+      {% csrf_token %}
+
+      <div class="qr-box">
+        <img src="{{ totp_svg_data_uri }}" alt="{% trans 'QR Code' %}">
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">{% trans "Manual setup code (optional)" %}</label>
+        <input type="text" class="form-control" value="{{ form.secret }}" disabled>
+        <p class="form-hint">{% trans "Only use this if you cannot scan the QR code." %}</p>
+      </div>
+
+      {% for field in form %}
+        {% if field.name != "secret" %}
+          <div class="form-group">
+            <label class="form-label" for="{{ field.id_for_label }}">{{ field.label }}</label>
+            <input
+              type="{{ field.field.widget.input_type }}"
+              name="{{ field.name }}"
+              id="{{ field.id_for_label }}"
+              class="form-control{% if field.errors %} is-invalid{% endif %}"
+              required
+            >
+            {% if field.errors %}
+              <div class="invalid-feedback">{{ field.errors|striptags }}</div>
+            {% endif %}
+          </div>
+        {% endif %}
+      {% endfor %}
+
+      <button type="submit" class="btn-primary">{% trans "Activate Authenticator App" %}</button>
+    </form>
+
+    <p class="copyright">Copyright &copy; Company Name. All Rights Reserved.</p>
+
+  </div>
+
+</body>
+</html>
+{% endblock content %}

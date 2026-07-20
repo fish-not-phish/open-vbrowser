@@ -1,0 +1,287 @@
+{% load i18n %}
+{% load allauth account %}
+{% block content %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+  <title>{% trans "Sign In" %}</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --pink: #CF7287;
+      --pink-dim: #7a5060;
+      --pink-glow: rgba(207, 114, 135, 0.33);
+      --bg: #0d0d14;
+      --surface: #12121e;
+      --surface-2: #1a1a2e;
+      --border: rgba(207, 114, 135, 0.2);
+      --input-border: rgba(207, 114, 135, 0.4);
+      --ring: rgba(207, 114, 135, 0.6);
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    html, body {
+      height: 100%;
+      font-family: 'Share Tech Mono', 'Courier New', monospace;
+      background-color: var(--bg);
+      color: var(--pink);
+    }
+
+    body {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 40px 16px;
+      background-image: repeating-linear-gradient(
+        0deg,
+        rgba(0, 0, 0, 0.06) 0px,
+        rgba(0, 0, 0, 0.06) 1px,
+        transparent 1px,
+        transparent 2px
+      );
+    }
+
+    a {
+      color: var(--pink);
+      text-decoration: none;
+    }
+
+    a:hover {
+      color: #e08090;
+      text-decoration: underline;
+    }
+
+    .outer {
+      width: 100%;
+      max-width: 380px;
+    }
+
+    .top-link {
+      text-align: center;
+      font-size: 0.8rem;
+      color: var(--pink-dim);
+      margin-bottom: 16px;
+    }
+
+    .top-link a {
+      color: var(--pink);
+    }
+
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      padding: 32px 28px;
+      box-shadow: 0 0 32px var(--pink-glow);
+    }
+
+    .logo-wrap {
+      text-align: center;
+      margin-bottom: 24px;
+    }
+
+    .logo-wrap img {
+      max-width: 200px;
+      height: auto;
+      filter: brightness(0) saturate(100%) invert(58%) sepia(30%) saturate(500%) hue-rotate(300deg) brightness(95%);
+    }
+
+    h1 {
+      font-size: 1.1rem;
+      font-weight: normal;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--pink);
+      text-align: center;
+      margin-bottom: 24px;
+    }
+
+    .form-control {
+      display: block;
+      width: 100%;
+      padding: 10px 12px;
+      font-size: 0.9rem;
+      font-family: inherit;
+      background: var(--surface-2);
+      color: var(--pink);
+      border: 1px solid var(--input-border);
+      border-radius: 2px;
+      margin-bottom: 12px;
+      outline: none;
+      transition: border-color 0.15s, box-shadow 0.15s;
+    }
+
+    .form-control:focus {
+      border-color: var(--pink);
+      box-shadow: 0 0 0 2px var(--ring);
+    }
+
+    .form-control::placeholder {
+      color: var(--pink-dim);
+    }
+
+    .form-control.is-invalid {
+      border-color: #cf4f4f;
+    }
+
+    .invalid-feedback {
+      font-size: 0.78rem;
+      color: #cf7272;
+      margin-bottom: 8px;
+      text-align: left;
+    }
+
+    .btn-primary {
+      display: block;
+      width: 100%;
+      padding: 10px;
+      font-family: inherit;
+      font-size: 0.9rem;
+      font-weight: 600;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: var(--bg);
+      background-color: var(--pink);
+      border: none;
+      border-radius: 2px;
+      cursor: pointer;
+      transition: background-color 0.15s;
+    }
+
+    .btn-primary:hover,
+    .btn-primary:focus {
+      background-color: #e08090;
+      outline: none;
+    }
+
+    .divider {
+      text-align: center;
+      font-size: 0.75rem;
+      color: var(--pink-dim);
+      margin: 20px 0;
+      position: relative;
+    }
+
+    .divider::before,
+    .divider::after {
+      content: '';
+      position: absolute;
+      top: 50%;
+      width: 40%;
+      height: 1px;
+      background: var(--border);
+    }
+
+    .divider::before { left: 0; }
+    .divider::after { right: 0; }
+
+    .provider-btn {
+      display: block;
+      width: 100%;
+      padding: 10px;
+      font-family: inherit;
+      font-size: 0.9rem;
+      font-weight: 500;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      color: var(--pink);
+      background: transparent;
+      border: 1px solid var(--border);
+      border-radius: 2px;
+      cursor: pointer;
+      text-decoration: none;
+      text-align: center;
+      transition: border-color 0.15s, background 0.15s;
+      margin-bottom: 8px;
+    }
+
+    .provider-btn:hover {
+      border-color: var(--pink);
+      background: var(--surface-2);
+      text-decoration: none;
+      color: var(--pink);
+    }
+
+    .copyright {
+      text-align: center;
+      font-size: 0.72rem;
+      color: var(--pink-dim);
+      margin-top: 28px;
+    }
+
+    #id_remember { display: none; }
+
+    .sr-only {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      padding: 0;
+      margin: -1px;
+      overflow: hidden;
+      clip: rect(0,0,0,0);
+      border: 0;
+    }
+  </style>
+</head>
+<body>
+
+  {% if not SOCIALACCOUNT_ONLY %}
+  <div class="outer">
+    <p class="top-link">
+      {% blocktranslate %}
+        Don't have an account?
+        <a href="{{ signup_url }}">Sign up</a>
+      {% endblocktranslate %}
+    </p>
+
+    <form class="card" method="post" action="{% url 'account_login' %}">
+      {% csrf_token %}
+
+      <div class="logo-wrap">
+        <img
+          src="https://raw.githubusercontent.com/vbrowser/logos/refs/heads/main/logo-vbrowser-transparent.png"
+          alt="Company"
+        >
+      </div>
+
+      <h1>{% trans "Sign in" %}</h1>
+
+      {% if not OIDC_ENABLED %}
+        {% for field in form %}
+          <label for="{{ field.id_for_label }}" class="sr-only">{{ field.label }}</label>
+          <input
+            type="{{ field.field.widget.input_type }}"
+            name="{{ field.name }}"
+            id="{{ field.id_for_label }}"
+            class="form-control{% if field.errors %} is-invalid{% endif %}"
+            placeholder="{{ field.label }}"
+            value="{{ field.value|default_if_none:'' }}"
+            {% if forloop.first %}autofocus{% endif %}
+            {% if field.field.required %}required{% endif %}
+          >
+          {% if field.errors %}
+            <div class="invalid-feedback">{{ field.errors|striptags }}</div>
+          {% endif %}
+        {% endfor %}
+
+        {{ redirect_field }}
+
+        <button class="btn-primary" type="submit">{% trans "Sign in" %}</button>
+      {% endif %}
+
+      {% if OIDC_ENABLED %}
+        {% include "socialaccount/snippets/login.html" with page_layout="entrance" %}
+      {% endif %}
+
+      <p class="copyright">Copyright &copy; Company Name. All Rights Reserved.</p>
+    </form>
+  </div>
+  {% endif %}
+
+</body>
+</html>
+{% endblock %}

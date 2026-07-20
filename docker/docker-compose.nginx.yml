@@ -1,0 +1,116 @@
+services:
+  ovb_postgres:
+    image: postgres:16-alpine
+    container_name: ovb_postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${DB_NAME:-ovb}
+      POSTGRES_USER: ${DB_USER:-ovb}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-changeme}
+    volumes:
+      - ovb_postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-ovb} -d ${DB_NAME:-ovb}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  ovb_redis:
+    image: redis:7-alpine
+    container_name: ovb_redis
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  ovb_backend:
+    build: ../backend
+    container_name: ovb_backend
+    command: ["--migrate", "daphne", "-b", "0.0.0.0", "-p", "8000", "backend.asgi:application"]
+    restart: unless-stopped
+    depends_on:
+      ovb_postgres:
+        condition: service_healthy
+      ovb_redis:
+        condition: service_healthy
+    env_file: .env
+
+  ovb_worker:
+    build: ../backend
+    container_name: ovb_worker
+    command: ["celery", "-A", "backend", "worker", "--loglevel=info", "--concurrency=4", "--uid=nobody", "--gid=nogroup"]
+    restart: unless-stopped
+    depends_on:
+      ovb_postgres:
+        condition: service_healthy
+      ovb_redis:
+        condition: service_healthy
+      ovb_backend:
+        condition: service_started
+    env_file: .env
+
+  ovb_beat:
+    build: ../backend
+    container_name: ovb_beat
+    command: ["celery", "-A", "backend", "beat", "--loglevel=info", "--scheduler", "django_celery_beat.schedulers:DatabaseScheduler", "--uid=nobody", "--gid=nogroup"]
+    restart: unless-stopped
+    depends_on:
+      ovb_postgres:
+        condition: service_healthy
+      ovb_redis:
+        condition: service_healthy
+      ovb_backend:
+        condition: service_started
+    env_file: .env
+
+  ovb_frontend:
+    build:
+      context: ../frontend
+      args:
+        NEXT_PUBLIC_BASE_URL: ${NEXT_PUBLIC_BASE_URL:-http://127.0.0.1:8000/api/}
+        NEXT_PUBLIC_BASE_URL_ACCOUNTS: ${NEXT_PUBLIC_BASE_URL_ACCOUNTS:-http://127.0.0.1:8000/}
+    container_name: ovb_frontend
+    restart: unless-stopped
+    depends_on:
+      - ovb_backend
+    env_file: .env
+
+  ovb_nginx:
+    image: nginx:alpine
+    container_name: ovb_nginx
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ovb_certbot_www:/var/www/certbot:ro
+      - ovb_certbot_certs:/etc/letsencrypt:ro
+    depends_on:
+      - ovb_backend
+      - ovb_frontend
+
+  ovb_certbot:
+    image: certbot/certbot:latest
+    container_name: ovb_certbot
+    volumes:
+      - ovb_certbot_www:/var/www/certbot
+      - ovb_certbot_certs:/etc/letsencrypt
+    # Initial certificate issuance — run once:
+    #   docker compose -f docker-compose.nginx.yml run --rm ovb_certbot
+    # Renewal — run periodically or via cron:
+    #   docker compose -f docker-compose.nginx.yml run --rm ovb_certbot renew
+    command: >
+      certonly --webroot
+      --webroot-path=/var/www/certbot
+      --email ${CERTBOT_EMAIL}
+      --domains ${CUSTOM_DOMAIN}
+      --agree-tos
+      --non-interactive
+
+volumes:
+  ovb_postgres_data:
+  ovb_certbot_www:
+  ovb_certbot_certs:

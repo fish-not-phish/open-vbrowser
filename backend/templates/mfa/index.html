@@ -1,0 +1,146 @@
+{% load allauth %}
+{% load i18n %}
+{% block content %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+  <title>{% trans "Multi-Factor Authentication" %}</title>
+  <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --pink: #CF7287;
+      --pink-dim: #7a5060;
+      --pink-glow: rgba(207, 114, 135, 0.33);
+      --bg: #0d0d14;
+      --surface: #12121e;
+      --surface-2: #1a1a2e;
+      --border: rgba(207, 114, 135, 0.2);
+    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body {
+      height: 100%;
+      font-family: 'Share Tech Mono', 'Courier New', monospace;
+      background-color: var(--bg);
+      color: var(--pink);
+    }
+    body {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 40px 16px;
+      background-image: repeating-linear-gradient(0deg,rgba(0,0,0,0.06) 0px,rgba(0,0,0,0.06) 1px,transparent 1px,transparent 2px);
+    }
+    a { color: var(--pink); text-decoration: none; }
+    a:hover { color: #e08090; text-decoration: underline; }
+    .card {
+      width: 100%;
+      max-width: 380px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      padding: 32px 28px;
+      box-shadow: 0 0 32px var(--pink-glow);
+      text-align: center;
+    }
+    .logo-wrap { margin-bottom: 24px; }
+    .logo-wrap img {
+      max-width: 200px;
+      height: auto;
+      filter: brightness(0) saturate(100%) invert(58%) sepia(30%) saturate(500%) hue-rotate(300deg) brightness(95%);
+    }
+    h1 {
+      font-size: 1.1rem;
+      font-weight: normal;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      margin-bottom: 20px;
+    }
+    .status-ok {
+      font-size: 0.85rem;
+      color: #7dbf85;
+      font-weight: bold;
+      margin-bottom: 12px;
+      letter-spacing: 0.04em;
+    }
+    .status-warn {
+      font-size: 0.85rem;
+      color: #cf7272;
+      font-weight: bold;
+      margin-bottom: 12px;
+      letter-spacing: 0.04em;
+    }
+    .subtitle { font-size: 0.8rem; color: var(--pink-dim); margin-bottom: 24px; line-height: 1.6; }
+    .btn-primary {
+      display: block;
+      width: 100%;
+      padding: 10px;
+      font-family: inherit;
+      font-size: 0.9rem;
+      font-weight: 600;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: var(--bg);
+      background-color: var(--pink);
+      border: none;
+      border-radius: 2px;
+      cursor: pointer;
+      text-decoration: none;
+      transition: background-color 0.15s;
+    }
+    .btn-primary:hover { background-color: #e08090; text-decoration: none; color: var(--bg); }
+    .btn-outline-danger {
+      display: inline-block;
+      padding: 8px 16px;
+      font-family: inherit;
+      font-size: 0.82rem;
+      font-weight: 500;
+      color: #cf7272;
+      background: transparent;
+      border: 1px solid #cf7272;
+      border-radius: 2px;
+      cursor: pointer;
+      text-decoration: none;
+      transition: background 0.15s;
+    }
+    .btn-outline-danger:hover { background: rgba(207,114,114,0.1); text-decoration: none; color: #cf7272; }
+    .copyright { font-size: 0.72rem; color: var(--pink-dim); margin-top: 28px; }
+  </style>
+</head>
+<body>
+
+  <div class="card">
+
+    <div class="logo-wrap">
+      <img
+        src="https://raw.githubusercontent.com/vbrowser/logos/refs/heads/main/logo-vbrowser-transparent.png"
+        alt="Company"
+      >
+    </div>
+
+    <h1>{% trans "Multi-Factor Authentication" %}</h1>
+
+    {% if authenticators.totp %}
+      <p class="status-ok">{% trans "Authenticator app is active." %}</p>
+      <p class="subtitle">{% trans "Your account is protected with multi-factor authentication." %}</p>
+
+      {% url 'mfa_deactivate_totp' as deactivate_url %}
+      <a href="{{ deactivate_url }}" class="btn-outline-danger">{% trans "Deactivate Authenticator App" %}</a>
+
+    {% else %}
+      <p class="status-warn">{% trans "Multi-factor authentication is required to use this website." %}</p>
+      <p class="subtitle">{% trans "You must set up an authenticator app before continuing." %}</p>
+
+      {% url 'mfa_activate_totp' as activate_url %}
+      <a href="{{ activate_url }}" class="btn-primary">{% trans "Set up authenticator app" %}</a>
+
+    {% endif %}
+
+    <p class="copyright">Copyright &copy; Company Name. All Rights Reserved.</p>
+
+  </div>
+
+</body>
+</html>
+{% endblock content %}
