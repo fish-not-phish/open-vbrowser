@@ -1,4 +1,4 @@
-aws_region = "us-west-1"
+aws_region = "us-east-1"
 project_name = "ovb"
 cluster_name = "ovb-browsers"
 common_tags = {

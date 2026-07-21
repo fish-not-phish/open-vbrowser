@@ -270,6 +270,7 @@ export default function SessionPage() {
             <iframe
               src={session.container_url}
               className="w-full h-full border-0"
+              allow="microphone *; camera *; speaker-selection *; autoplay *; fullscreen *; clipboard-read *; clipboard-write *; display-capture *"
               allowFullScreen
               title="Browser session"
             />
