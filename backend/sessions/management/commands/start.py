@@ -22,7 +22,7 @@ if not DEV_MODE:
 
 # ─── OS-based browser slugs ────────────────────────────────────────────────────
 # These receive the "os" resource tier from SiteSettings instead of "browser".
-OS_APP_SLUGS = frozenset({"kali", "ubuntu", "alpine"})
+OS_APP_SLUGS = frozenset({"kali", "ubuntu", "alpine", "code-server", "terminal"})
 
 if not DEV_MODE:
     SUBNET_ID = settings.SUBNET_ID
@@ -123,7 +123,7 @@ def run_browser_task(browser_type, container_uuid, auto_open_url, username, sess
     }
     if browser not in (
         "tor", "telegram", "kali",
-        "alpine", "ubuntu"
+        "alpine", "ubuntu", "code-server", "terminal"
     ):
         overrides['containerOverrides'][0]['environment'].append({
             'name': 'FF_OPEN_URL',

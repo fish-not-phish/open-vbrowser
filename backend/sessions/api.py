@@ -216,6 +216,7 @@ def create_session(request: HttpRequest, payload: SessionCreateIn):
     # apps that don't have mitmproxy support (comms/vpn/security tools).
     TRAFFIC_LOG_UNSUPPORTED = {
         "kali", "telegram", "tor",
+        "ubuntu", "code-server", "terminal",
     }
 
     # Gate feature flags against global and per-workspace settings.

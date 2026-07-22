@@ -12,7 +12,7 @@ import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "sonner";
 import Image from "next/image";
-import { Globe, ShieldCheck, MessageSquare, Network, LayoutGrid, Loader2, Search, Zap, X, TriangleAlert, Activity, Lock, Info } from "lucide-react";
+import { Globe, ShieldCheck, MessageSquare, Network, LayoutGrid, Loader2, Search, Zap, X, TriangleAlert, Activity, Lock, Info, Terminal, Wrench } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { motion, AnimatePresence } from "motion/react";
 
@@ -21,15 +21,18 @@ import { motion, AnimatePresence } from "motion/react";
 
 const TRAFFIC_LOG_UNSUPPORTED = new Set([
   "kali", "telegram", "tor",
+  "ubuntu", "code-server", "terminal",
 ]);
 
 // ─── Category metadata ────────────────────────────────────────────────────────
 
 const CATEGORY_META: Record<string, { label: string; icon: React.ElementType; color: string }> = {
-  browser:  { label: "Browsers",       icon: Globe,          color: "text-blue-500"   },
-  security: { label: "Security",       icon: ShieldCheck,    color: "text-red-500"    },
-  comms:    { label: "Communications", icon: MessageSquare,  color: "text-green-500"  },
-  vpn:      { label: "VPN",            icon: Network,        color: "text-purple-500" },
+  browser:  { label: "Browsers",           icon: Globe,          color: "text-blue-500"   },
+  security: { label: "Security",           icon: ShieldCheck,    color: "text-red-500"    },
+  comms:    { label: "Communications",     icon: MessageSquare,  color: "text-green-500"  },
+  vpn:      { label: "VPN",               icon: Network,        color: "text-purple-500" },
+  os:       { label: "Operating Systems", icon: Terminal,       color: "text-orange-500" },
+  tools:    { label: "Tools",             icon: Wrench,         color: "text-cyan-500"   },
 };
 
 // ─── Animation variants ───────────────────────────────────────────────────────
