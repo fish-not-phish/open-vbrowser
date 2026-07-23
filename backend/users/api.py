@@ -492,6 +492,427 @@ def update_user(request: HttpRequest, user_id: int, payload: AdminUserUpdateIn):
     return _admin_user_out(user)
 
 
+@router.get("/admin/analytics", response=AdminAnalyticsOut, auth=admin_session_auth)
+def admin_analytics(
+    request: HttpRequest,
+    from_date: str = None,
+    to_date: str = None,
+    user_id: int = None,
+    workspace_uuid: str = None,
+):
+    """
+    Return aggregated analytics for the global admin dashboard.
+
+    Supports optional date range (from_date / to_date as ISO date strings)
+    and optional scoping to a single user (user_id) or workspace (workspace_uuid).
+    When scoped, all metrics are filtered to that entity.
+    """
+    from django.contrib.auth.models import User as DjangoUser
+    from django.db.models import Sum, Count, Avg, Q
+    from django.utils.dateparse import parse_date
+    from sessions.models import Container
+    from workspaces.models import Workspace
+    from cases.models import Case
+    from browsers.models import BrowserImage
+    import datetime
+
+    # ── Date range filter ─────────────────────────────────────────────────────
+    date_filter = Q()
+    if from_date:
+        try:
+            fd = parse_date(from_date)
+            if fd:
+                date_filter &= Q(date_created__date__gte=fd)
+        except Exception:
+            pass
+    if to_date:
+        try:
+            td = parse_date(to_date)
+            if td:
+                date_filter &= Q(date_created__date__lte=td)
+        except Exception:
+            pass
+
+    # ── Scope filter ──────────────────────────────────────────────────────────
+    scope_filter = Q()
+    if user_id:
+        scope_filter &= Q(user_id=user_id)
+    if workspace_uuid:
+        scope_filter &= Q(workspace__uuid=workspace_uuid)
+
+    base_qs = Container.objects.filter(date_filter & scope_filter)
+
+    # ── Core session aggregates ───────────────────────────────────────────────
+    from django.db.models import ExpressionWrapper, DurationField, F
+
+    agg = base_qs.aggregate(
+        total_cost=Sum('session_cost_usd'),
+        total_sessions=Count('id'),
+    )
+
+    # Average duration — derived from start_time/closed_at since duration_seconds
+    # is not a stored field on the Container model.
+    closed_qs = base_qs.filter(closed_at__isnull=False, start_time__isnull=False)
+    avg_dur = 0.0
+    if closed_qs.exists():
+        dur_agg = closed_qs.annotate(
+            dur=ExpressionWrapper(F('closed_at') - F('start_time'), output_field=DurationField())
+        ).aggregate(avg_dur=Avg('dur'))
+        if dur_agg['avg_dur']:
+            avg_dur = dur_agg['avg_dur'].total_seconds()
+
+    active_count = base_qs.filter(active=True).count()
+    total_sessions = agg['total_sessions']
+    total_cost = float(agg['total_cost'] or 0)
+
+    # ── Cases ─────────────────────────────────────────────────────────────────
+    cases_qs = Case.objects.filter(status='open')
+    if user_id:
+        cases_qs = cases_qs.filter(created_by_id=user_id)
+    if workspace_uuid:
+        cases_qs = cases_qs.filter(workspace__uuid=workspace_uuid)
+    if from_date or to_date:
+        if from_date:
+            try:
+                fd = parse_date(from_date)
+                if fd:
+                    cases_qs = cases_qs.filter(created_at__date__gte=fd)
+            except Exception:
+                pass
+        if to_date:
+            try:
+                td = parse_date(to_date)
+                if td:
+                    cases_qs = cases_qs.filter(created_at__date__lte=td)
+            except Exception:
+                pass
+    open_cases = cases_qs.count()
+
+    # ── Workspaces (non-personal) ─────────────────────────────────────────────
+    ws_qs = Workspace.objects.filter(is_personal=False)
+    if user_id:
+        ws_qs = ws_qs.filter(members__id=user_id)
+    if workspace_uuid:
+        ws_qs = ws_qs.filter(uuid=workspace_uuid)
+    total_workspaces = ws_qs.count()
+
+    # ── Browser display name lookup ───────────────────────────────────────────
+    browser_names = {b.slug: b.display_name for b in BrowserImage.objects.all()}
+
+    # ── Most active users (top 10 by session count) ───────────────────────────
+    user_session_qs = (
+        base_qs
+        .values('user_id', 'user__email', 'user__first_name', 'user__last_name')
+        .annotate(session_count=Count('id'), total_cost=Sum('session_cost_usd'))
+        .order_by('-session_count')[:10]
+    )
+    most_active_users = [
+        {
+            'user_id': r['user_id'],
+            'email': r['user__email'] or '',
+            'name': f"{r['user__first_name'] or ''} {r['user__last_name'] or ''}".strip() or r['user__email'] or '',
+            'session_count': r['session_count'],
+            'total_cost_usd': float(r['total_cost'] or 0),
+        }
+        for r in user_session_qs
+    ]
+
+    # ── Most used apps (top 10 by session count) ──────────────────────────────
+    app_qs = (
+        base_qs
+        .values('type')
+        .annotate(session_count=Count('id'))
+        .order_by('-session_count')[:10]
+    )
+    most_used_apps = [
+        {
+            'slug': r['type'] or '',
+            'display_name': browser_names.get(r['type'] or '', r['type'] or ''),
+            'session_count': r['session_count'],
+        }
+        for r in app_qs
+    ]
+
+    # ── Most active workspaces (top 10, non-personal) ─────────────────────────
+    ws_session_qs = (
+        base_qs
+        .filter(workspace__is_personal=False)
+        .values('workspace__uuid', 'workspace__name')
+        .annotate(session_count=Count('id'), total_cost=Sum('session_cost_usd'))
+        .order_by('-session_count')[:10]
+    )
+    most_active_workspaces = [
+        {
+            'uuid': str(r['workspace__uuid']) if r['workspace__uuid'] else '',
+            'name': r['workspace__name'] or '',
+            'session_count': r['session_count'],
+            'total_cost_usd': float(r['total_cost'] or 0),
+        }
+        for r in ws_session_qs
+    ]
+
+    # ── Cost per user (top 10 by total cost) ─────────────────────────────────
+    cost_user_qs = (
+        base_qs
+        .values('user_id', 'user__email', 'user__first_name', 'user__last_name')
+        .annotate(session_count=Count('id'), total_cost=Sum('session_cost_usd'))
+        .order_by('-total_cost')[:10]
+    )
+    cost_per_user = [
+        {
+            'user_id': r['user_id'],
+            'email': r['user__email'] or '',
+            'name': f"{r['user__first_name'] or ''} {r['user__last_name'] or ''}".strip() or r['user__email'] or '',
+            'session_count': r['session_count'],
+            'total_cost_usd': float(r['total_cost'] or 0),
+        }
+        for r in cost_user_qs
+    ]
+
+    # ── Cost per workspace (top 10 by total cost, non-personal) ──────────────
+    cost_ws_qs = (
+        base_qs
+        .filter(workspace__is_personal=False)
+        .values('workspace__uuid', 'workspace__name')
+        .annotate(session_count=Count('id'), total_cost=Sum('session_cost_usd'))
+        .order_by('-total_cost')[:10]
+    )
+    cost_per_workspace = [
+        {
+            'uuid': str(r['workspace__uuid']) if r['workspace__uuid'] else '',
+            'name': r['workspace__name'] or '',
+            'session_count': r['session_count'],
+            'total_cost_usd': float(r['total_cost'] or 0),
+        }
+        for r in cost_ws_qs
+    ]
+
+    # ── Sessions per day (time-series, for the trend line chart) ─────────────
+    from django.db.models.functions import TruncDate
+    import datetime as dt
+
+    daily_qs = (
+        base_qs
+        .annotate(day=TruncDate('date_created'))
+        .values('day')
+        .annotate(sessions=Count('id'))
+        .order_by('day')
+    )
+
+    # Fill gaps so the chart line is continuous
+    daily_map = {r['day']: r['sessions'] for r in daily_qs if r['day']}
+    if daily_map:
+        first_day = min(daily_map)
+        last_day = max(daily_map)
+        sessions_per_day = []
+        cursor = first_day
+        while cursor <= last_day:
+            sessions_per_day.append({
+                'date': cursor.strftime('%Y-%m-%d'),
+                'sessions': daily_map.get(cursor, 0),
+            })
+            cursor += dt.timedelta(days=1)
+    else:
+        sessions_per_day = []
+
+    return {
+        'total_cost_usd': total_cost,
+        'active_sessions': active_count,
+        'total_sessions': total_sessions,
+        'avg_session_duration_seconds': avg_dur,
+        'total_open_cases': open_cases,
+        'total_workspaces': total_workspaces,
+        'sessions_per_day': sessions_per_day,
+        'most_active_users': most_active_users,
+        'most_used_apps': most_used_apps,
+        'most_active_workspaces': most_active_workspaces,
+        'cost_per_user': cost_per_user,
+        'cost_per_workspace': cost_per_workspace,
+    }
+
+
+@router.get("/admin/search-entities", response=dict, auth=admin_session_auth)
+def admin_search_entities(request: HttpRequest, q: str = ''):
+    """
+    Search users and non-personal workspaces by name/email for the scope selector.
+    Returns up to 10 users and 10 workspaces matching the query.
+    """
+    from django.contrib.auth.models import User as DjangoUser
+    from workspaces.models import Workspace
+    from django.db.models import Q as DQ
+
+    users = []
+    workspaces = []
+
+    if q:
+        user_qs = DjangoUser.objects.filter(
+            is_active=True
+        ).filter(
+            DQ(email__icontains=q) | DQ(first_name__icontains=q) | DQ(last_name__icontains=q)
+        ).order_by('email')[:10]
+        users = [
+            {
+                'id': u.id,
+                'email': u.email,
+                'name': f"{u.first_name} {u.last_name}".strip() or u.email,
+            }
+            for u in user_qs
+        ]
+
+        ws_qs = Workspace.objects.filter(
+            is_personal=False
+        ).filter(
+            DQ(name__icontains=q) | DQ(slug__icontains=q)
+        ).order_by('name')[:10]
+        workspaces = [
+            {'uuid': str(ws.uuid), 'name': ws.name}
+            for ws in ws_qs
+        ]
+
+    return {'users': users, 'workspaces': workspaces}
+
+
+# ======================
+# Admin: Workspace Management
+# ======================
+
+@router.get("/admin/workspaces", response=list[AdminWorkspaceOut], auth=admin_session_auth)
+def admin_list_workspaces(request: HttpRequest, q: str = ''):
+    """List all non-personal workspaces (admin only). Optionally filter by name/slug."""
+    from workspaces.models import Workspace
+    from django.db.models import Q as DQ
+
+    qs = Workspace.objects.filter(is_personal=False).order_by('name')
+    if q:
+        qs = qs.filter(DQ(name__icontains=q) | DQ(slug__icontains=q))
+
+    result = []
+    for ws in qs:
+        result.append({
+            'id': ws.id,
+            'uuid': str(ws.uuid),
+            'name': ws.name,
+            'slug': ws.slug,
+            'created_at': ws.created_at,
+            'created_by_email': ws.created_by.email if ws.created_by else None,
+            'member_count': ws.memberships.count(),
+        })
+    return result
+
+
+@router.get("/admin/workspaces/{ws_uuid}/members", response=list[AdminMemberOut], auth=admin_session_auth)
+def admin_list_workspace_members(request: HttpRequest, ws_uuid: str):
+    """List all members of any workspace (admin only)."""
+    from workspaces.models import Workspace, WorkspaceMembership
+    try:
+        ws = Workspace.objects.get(uuid=ws_uuid)
+    except Workspace.DoesNotExist:
+        raise HttpError(404, "Workspace not found")
+
+    memberships = WorkspaceMembership.objects.filter(workspace=ws).select_related('user').order_by('role', 'joined_at')
+    return [
+        {
+            'user_id': m.user.id,
+            'username': m.user.username,
+            'email': m.user.email,
+            'first_name': m.user.first_name,
+            'last_name': m.user.last_name,
+            'role': m.role,
+            'joined_at': m.joined_at,
+        }
+        for m in memberships
+    ]
+
+
+@router.post("/admin/workspaces/{ws_uuid}/members", response=AdminMemberOut, auth=admin_session_auth)
+def admin_add_workspace_member(request: HttpRequest, ws_uuid: str, payload: AdminMemberInviteIn):
+    """Add a user to any workspace by email (admin only)."""
+    from django.contrib.auth.models import User as DjangoUser
+    from workspaces.models import Workspace, WorkspaceMembership
+
+    try:
+        ws = Workspace.objects.get(uuid=ws_uuid)
+    except Workspace.DoesNotExist:
+        raise HttpError(404, "Workspace not found")
+
+    try:
+        user = DjangoUser.objects.get(email__iexact=payload.email)
+    except DjangoUser.DoesNotExist:
+        raise HttpError(404, "No user found with that email address")
+
+    if WorkspaceMembership.objects.filter(workspace=ws, user=user).exists():
+        raise HttpError(409, "User is already a member of this workspace")
+
+    role = payload.role if payload.role in ('owner', 'admin', 'member') else 'member'
+    membership = WorkspaceMembership.objects.create(workspace=ws, user=user, role=role)
+
+    return {
+        'user_id': user.id,
+        'username': user.username,
+        'email': user.email,
+        'first_name': user.first_name,
+        'last_name': user.last_name,
+        'role': membership.role,
+        'joined_at': membership.joined_at,
+    }
+
+
+@router.patch("/admin/workspaces/{ws_uuid}/members/{user_id}", response=AdminMemberOut, auth=admin_session_auth)
+def admin_change_workspace_member_role(request: HttpRequest, ws_uuid: str, user_id: int, payload: AdminMemberRoleIn):
+    """Change any member's role in any workspace (admin only). Ownership transfer supported."""
+    from workspaces.models import Workspace, WorkspaceMembership
+
+    try:
+        ws = Workspace.objects.get(uuid=ws_uuid)
+    except Workspace.DoesNotExist:
+        raise HttpError(404, "Workspace not found")
+
+    try:
+        membership = WorkspaceMembership.objects.select_related('user').get(workspace=ws, user_id=user_id)
+    except WorkspaceMembership.DoesNotExist:
+        raise HttpError(404, "Member not found")
+
+    new_role = payload.role
+    if new_role not in ('owner', 'admin', 'member'):
+        raise HttpError(400, "Role must be 'owner', 'admin', or 'member'")
+
+    # Ownership transfer: demote existing owner to admin first
+    if new_role == 'owner':
+        WorkspaceMembership.objects.filter(workspace=ws, role='owner').exclude(user_id=user_id).update(role='admin')
+
+    membership.role = new_role
+    membership.save()
+
+    return {
+        'user_id': membership.user.id,
+        'username': membership.user.username,
+        'email': membership.user.email,
+        'first_name': membership.user.first_name,
+        'last_name': membership.user.last_name,
+        'role': membership.role,
+        'joined_at': membership.joined_at,
+    }
+
+
+@router.delete("/admin/workspaces/{ws_uuid}/members/{user_id}", response=MessageOut, auth=admin_session_auth)
+def admin_remove_workspace_member(request: HttpRequest, ws_uuid: str, user_id: int):
+    """Remove any member from any workspace (admin only)."""
+    from workspaces.models import Workspace, WorkspaceMembership
+
+    try:
+        ws = Workspace.objects.get(uuid=ws_uuid)
+    except Workspace.DoesNotExist:
+        raise HttpError(404, "Workspace not found")
+
+    try:
+        membership = WorkspaceMembership.objects.get(workspace=ws, user_id=user_id)
+    except WorkspaceMembership.DoesNotExist:
+        raise HttpError(404, "Member not found")
+
+    membership.delete()
+    return {"success": True, "message": "Member removed"}
+
+
 @router.post("/admin/users/{user_id}/reset-password", response=dict, auth=admin_session_auth)
 def reset_user_password(request: HttpRequest, user_id: int):
     """Generate and set a new random password for a user (admin only)."""

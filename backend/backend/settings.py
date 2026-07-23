@@ -409,6 +409,10 @@ DEFAULT_IDLE_THRESHOLD = os.environ.get('DEFAULT_IDLE_THRESHOLD', '10')
 FARGATE_VCPU_PER_HOUR_USD = os.environ.get('FARGATE_VCPU_PER_HOUR_USD', '0.04048')
 FARGATE_MEMORY_GB_PER_HOUR_USD = os.environ.get('FARGATE_MEMORY_GB_PER_HOUR_USD', '0.004445')
 FARGATE_SPOT_DISCOUNT = os.environ.get('FARGATE_SPOT_DISCOUNT', '0.70')
+# AWS charges $0.005/hr per public IPv4 address (since Feb 2024).
+# Tasks use assignPublicIp: ENABLED, so every session incurs this.
+# Set to '0' to disable if sessions are ever moved behind a NAT/load balancer.
+PUBLIC_IPV4_PER_HOUR_USD = os.environ.get('PUBLIC_IPV4_PER_HOUR_USD', '0.005')
 
 # ─── Browser path ─────────────────────────────────────────────────────────────
 # Path to the directory containing browser image subdirectories (on the container)

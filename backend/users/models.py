@@ -80,7 +80,7 @@ class SiteSettings(models.Model):
     )
     # ── ECS task resource provisioning ────────────────────────────────────────
     # vCPU and memory for standard browser sessions (Chrome, Firefox, etc.)
-    # Valid Fargate combos: 0.25/0.5, 0.25/1, 0.25/2, 0.5/1..4, 1/2..8, 2/4..16, 4/8..30, 8/16..60
+    # Allowed combos: 0.5/1..4 GB, 1/2..8 GB, 2/4..16 GB, 4/8..30 GB
     browser_vcpu = models.DecimalField(
         max_digits=4, decimal_places=2, default='0.5',
         help_text="vCPU allocation for standard browser sessions (e.g. 0.25, 0.5, 1.0)."

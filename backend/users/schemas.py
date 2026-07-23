@@ -146,3 +146,80 @@ class DjangoSessionOut(Schema):
 class MFAStatusOut(Schema):
     totp_enabled: bool
     oidc_active: bool
+
+
+# ─── Admin Analytics schemas ───────────────────────────────────────────────────
+
+class AnalyticsUserRow(Schema):
+    user_id: int
+    email: str
+    name: str
+    session_count: int
+    total_cost_usd: float
+
+
+class AnalyticsAppRow(Schema):
+    slug: str
+    display_name: str
+    session_count: int
+
+
+class AnalyticsWorkspaceRow(Schema):
+    uuid: str
+    name: str
+    session_count: int
+    total_cost_usd: float
+
+
+class SessionsPerDayRow(Schema):
+    date: str        # "YYYY-MM-DD"
+    sessions: int
+
+
+class AdminAnalyticsOut(Schema):
+    # Global counters
+    total_cost_usd: float
+    active_sessions: int
+    total_sessions: int
+    avg_session_duration_seconds: float
+    total_open_cases: int
+    total_workspaces: int  # excludes personal workspaces
+    # Time-series
+    sessions_per_day: list[SessionsPerDayRow]
+    # Top-10 lists
+    most_active_users: list[AnalyticsUserRow]
+    most_used_apps: list[AnalyticsAppRow]
+    most_active_workspaces: list[AnalyticsWorkspaceRow]
+    cost_per_user: list[AnalyticsUserRow]
+    cost_per_workspace: list[AnalyticsWorkspaceRow]
+
+
+# ─── Admin workspace management schemas ───────────────────────────────────────
+
+class AdminWorkspaceOut(Schema):
+    id: int
+    uuid: str
+    name: str
+    slug: str
+    created_at: datetime
+    created_by_email: Optional[str] = None
+    member_count: int
+
+
+class AdminMemberOut(Schema):
+    user_id: int
+    username: str
+    email: str
+    first_name: str
+    last_name: str
+    role: str
+    joined_at: datetime
+
+
+class AdminMemberInviteIn(Schema):
+    email: str
+    role: Optional[str] = "member"
+
+
+class AdminMemberRoleIn(Schema):
+    role: str

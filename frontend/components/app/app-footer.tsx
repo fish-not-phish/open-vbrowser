@@ -2,9 +2,9 @@ import Image from 'next/image'
 import { Separator } from '@/components/ui/separator'
 
 const links = [
-  { label: 'License', href: '#' },
-  { label: 'Documentation', href: '#' },
-  { label: 'Support', href: '#' },
+  { label: 'License', href: 'https://github.com/fish-not-phish/open-vbrowser/blob/main/LICENSE' },
+  { label: 'Documentation', href: 'https://docs.vbrowser.io/' },
+  { label: 'Support', href: 'https://github.com/fish-not-phish/open-vbrowser/issues' },
 ]
 
 const AppFooter = () => {

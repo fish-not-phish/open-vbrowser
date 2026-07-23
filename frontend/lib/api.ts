@@ -467,6 +467,72 @@ export interface AdminUser {
   generated_password?: string;
 }
 
+export interface AnalyticsUserRow {
+  user_id: number;
+  email: string;
+  name: string;
+  session_count: number;
+  total_cost_usd: number;
+}
+
+export interface AnalyticsAppRow {
+  slug: string;
+  display_name: string;
+  session_count: number;
+}
+
+export interface AnalyticsWorkspaceRow {
+  uuid: string;
+  name: string;
+  session_count: number;
+  total_cost_usd: number;
+}
+
+export interface SessionsPerDayRow {
+  date: string;     // "YYYY-MM-DD"
+  sessions: number;
+}
+
+export interface AdminAnalytics {
+  total_cost_usd: number;
+  active_sessions: number;
+  total_sessions: number;
+  avg_session_duration_seconds: number;
+  total_open_cases: number;
+  total_workspaces: number;
+  sessions_per_day: SessionsPerDayRow[];
+  most_active_users: AnalyticsUserRow[];
+  most_used_apps: AnalyticsAppRow[];
+  most_active_workspaces: AnalyticsWorkspaceRow[];
+  cost_per_user: AnalyticsUserRow[];
+  cost_per_workspace: AnalyticsWorkspaceRow[];
+}
+
+export interface AdminSearchResult {
+  users: { id: number; email: string; name: string }[];
+  workspaces: { uuid: string; name: string }[];
+}
+
+export interface AdminWorkspace {
+  id: number;
+  uuid: string;
+  name: string;
+  slug: string;
+  created_at: string;
+  created_by_email: string | null;
+  member_count: number;
+}
+
+export interface AdminWorkspaceMember {
+  user_id: number;
+  username: string;
+  email: string;
+  first_name: string;
+  last_name: string;
+  role: string;
+  joined_at: string;
+}
+
 export const adminApi = {
   getSiteSettings: () => apiFetch<SiteSettings>('/accounts/site-settings'),
   updateSiteSettings: (payload: Partial<Omit<SiteSettings, 'oidc_client_secret_set'> & { oidc_client_secret?: string }>, csrfToken: string) =>
@@ -485,6 +551,44 @@ export const adminApi = {
   getWorkspaceBrowsers: (uuid: string) => apiFetch<string[]>(`/v1/workspaces/${uuid}/browsers/`),
   setWorkspaceBrowsers: (uuid: string, slugs: string[], csrfToken: string) =>
     apiFetch<string[]>(`/v1/workspaces/${uuid}/browsers/`, { method: 'PUT', body: JSON.stringify({ slugs }), csrfToken }),
+
+  getAnalytics: (params?: {
+    from_date?: string;
+    to_date?: string;
+    user_id?: number;
+    workspace_uuid?: string;
+  }) => {
+    const qs = new URLSearchParams();
+    if (params?.from_date) qs.set('from_date', params.from_date);
+    if (params?.to_date) qs.set('to_date', params.to_date);
+    if (params?.user_id != null) qs.set('user_id', String(params.user_id));
+    if (params?.workspace_uuid) qs.set('workspace_uuid', params.workspace_uuid);
+    const q = qs.toString();
+    return apiFetch<AdminAnalytics>(`/accounts/admin/analytics${q ? '?' + q : ''}`);
+  },
+
+  searchEntities: (q: string) =>
+    apiFetch<AdminSearchResult>(`/accounts/admin/search-entities?q=${encodeURIComponent(q)}`),
+
+  // Workspace management
+  listWorkspaces: (q?: string) => {
+    const qs = q ? `?q=${encodeURIComponent(q)}` : '';
+    return apiFetch<AdminWorkspace[]>(`/accounts/admin/workspaces${qs}`);
+  },
+  listWorkspaceMembers: (uuid: string) =>
+    apiFetch<AdminWorkspaceMember[]>(`/accounts/admin/workspaces/${uuid}/members`),
+  addWorkspaceMember: (uuid: string, payload: { email: string; role?: string }, csrfToken: string) =>
+    apiFetch<AdminWorkspaceMember>(`/accounts/admin/workspaces/${uuid}/members`, {
+      method: 'POST', body: JSON.stringify(payload), csrfToken,
+    }),
+  changeWorkspaceMemberRole: (uuid: string, user_id: number, role: string, csrfToken: string) =>
+    apiFetch<AdminWorkspaceMember>(`/accounts/admin/workspaces/${uuid}/members/${user_id}`, {
+      method: 'PATCH', body: JSON.stringify({ role }), csrfToken,
+    }),
+  removeWorkspaceMember: (uuid: string, user_id: number, csrfToken: string) =>
+    apiFetch<{ success: boolean; message: string }>(`/accounts/admin/workspaces/${uuid}/members/${user_id}`, {
+      method: 'DELETE', csrfToken,
+    }),
 };
 
 export const notificationsApi = {

@@ -31,6 +31,8 @@ import {
   SettingsIcon,
   UsersIcon,
   Settings2Icon,
+  LayoutDashboardIcon,
+  Building2Icon,
 } from 'lucide-react'
 import { WorkspaceSwitcher } from './workspace-switcher'
 import { NavUser } from './nav-user'
@@ -63,8 +65,10 @@ type MenuItem = {
 const mainItems: MenuItem[] = []
 
 const adminItems: MenuItem[] = [
-  { icon: <SettingsIcon />, label: 'Site Settings', href: '/admin/settings' },
+  { icon: <LayoutDashboardIcon />, label: 'Dashboard', href: '/admin/dashboard' },
+  { icon: <Building2Icon />, label: 'Workspaces', href: '/admin/workspaces' },
   { icon: <UsersIcon />, label: 'Users', href: '/admin/users' },
+  { icon: <SettingsIcon />, label: 'Site Settings', href: '/admin/settings' },
 ]
 
 // ─── Reusable grouped section ─────────────────────────────────────────────────
