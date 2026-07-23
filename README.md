@@ -250,23 +250,26 @@ This will destroy all Terraform-managed AWS infrastructure (ECS, ECR, VPC, IAM, 
 
 ## Supported Browsers & OS Images
 
-| Browser / OS     | Selection name |
-|------------------|----------------|
-| Brave            | `brave`        |
-| Chrome           | `chrome`       |
-| Microsoft Edge   | `edge`         |
-| Firefox          | `firefox`      |
-| Floorp           | `floorp`       |
-| Kali Linux       | `kali`         |
-| LibreWolf        | `librewolf`    |
-| Mullvad Browser  | `mullvad`      |
-| Pale Moon        | `palemoon`     |
-| Pulse Secure     | `pulse`        |
-| Telegram         | `telegram`     |
-| Tor Browser      | `tor`          |
-| Vivaldi          | `vivaldi`      |
-| Waterfox         | `waterfox`     |
-| Zen Browser      | `zen`          |
+| | Browser / OS     | Selection name |
+|--|------------------|----------------|
+| <img src="https://raw.githubusercontent.com/fish-not-phish/open-vbrowser/main/frontend/public/images/browsers/brave.png" width="20"/> | Brave            | `brave`        |
+| <img src="https://raw.githubusercontent.com/fish-not-phish/open-vbrowser/main/frontend/public/images/browsers/chrome.png" width="20"/> | Chrome           | `chrome`       |
+| <img src="https://raw.githubusercontent.com/fish-not-phish/open-vbrowser/main/frontend/public/images/browsers/code-server.png" width="20"/> | Code Server      | `code-server`  |
+| <img src="https://raw.githubusercontent.com/fish-not-phish/open-vbrowser/main/frontend/public/images/browsers/edge.png" width="20"/> | Microsoft Edge   | `edge`         |
+| <img src="https://raw.githubusercontent.com/fish-not-phish/open-vbrowser/main/frontend/public/images/browsers/firefox.png" width="20"/> | Firefox          | `firefox`      |
+| <img src="https://raw.githubusercontent.com/fish-not-phish/open-vbrowser/main/frontend/public/images/browsers/floorp.png" width="20"/> | Floorp           | `floorp`       |
+| <img src="https://raw.githubusercontent.com/fish-not-phish/open-vbrowser/main/frontend/public/images/browsers/kali.png" width="20"/> | Kali Linux       | `kali`         |
+| <img src="https://raw.githubusercontent.com/fish-not-phish/open-vbrowser/main/frontend/public/images/browsers/librewolf.png" width="20"/> | LibreWolf        | `librewolf`    |
+| <img src="https://raw.githubusercontent.com/fish-not-phish/open-vbrowser/main/frontend/public/images/browsers/mullvad.png" width="20"/> | Mullvad Browser  | `mullvad`      |
+| <img src="https://raw.githubusercontent.com/fish-not-phish/open-vbrowser/main/frontend/public/images/browsers/palemoon.png" width="20"/> | Pale Moon        | `palemoon`     |
+| <img src="https://raw.githubusercontent.com/fish-not-phish/open-vbrowser/main/frontend/public/images/browsers/pulse.png" width="20"/> | Pulse Secure     | `pulse`        |
+| <img src="https://raw.githubusercontent.com/fish-not-phish/open-vbrowser/main/frontend/public/images/browsers/telegram.png" width="20"/> | Telegram         | `telegram`     |
+| <img src="https://raw.githubusercontent.com/fish-not-phish/open-vbrowser/main/frontend/public/images/browsers/terminal.png" width="20"/> | Terminal         | `terminal`     |
+| <img src="https://raw.githubusercontent.com/fish-not-phish/open-vbrowser/main/frontend/public/images/browsers/tor.png" width="20"/> | Tor Browser      | `tor`          |
+| <img src="https://raw.githubusercontent.com/fish-not-phish/open-vbrowser/main/frontend/public/images/browsers/ubuntu.png" width="20"/> | Ubuntu           | `ubuntu`       |
+| <img src="https://raw.githubusercontent.com/fish-not-phish/open-vbrowser/main/frontend/public/images/browsers/vivaldi.png" width="20"/> | Vivaldi          | `vivaldi`      |
+| <img src="https://raw.githubusercontent.com/fish-not-phish/open-vbrowser/main/frontend/public/images/browsers/waterfox.png" width="20"/> | Waterfox         | `waterfox`     |
+| <img src="https://raw.githubusercontent.com/fish-not-phish/open-vbrowser/main/frontend/public/images/browsers/zen.png" width="20"/> | Zen Browser      | `zen`          |
 
 Images are configured in `terraform/terraform.tfvars` under `docker_images`. Only the images listed there will have ECS task definitions created and will be built/pushed by `build_browsers.sh`.
 
