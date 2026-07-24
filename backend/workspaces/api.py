@@ -481,6 +481,167 @@ def get_workspace_browsers(request: HttpRequest, ws_uuid: UUID):
     return list(ws.allowed_browsers.values_list('slug', flat=True))
 
 
+@router.get("/{ws_uuid}/dashboard/", response=dict, auth=session_mfa_auth)
+def workspace_dashboard(request: HttpRequest, ws_uuid: UUID):
+    """
+    Aggregated dashboard data for the active workspace.
+
+    Role-scoped:
+    - owners/admins: full workspace view (all members, all sessions)
+    - members: personal view (own sessions only)
+    """
+    from django.db.models import Sum, Count, Q
+    from django.utils import timezone
+    from datetime import timedelta
+    from sessions.models import Container
+    from cases.models import Case
+
+    try:
+        ws = _get_ws_for_user(ws_uuid, request.auth)
+        membership = ws.memberships.get(user=request.auth)
+    except WorkspaceMembership.DoesNotExist:
+        raise HttpError(404, "Workspace not found")
+
+    is_privileged = membership.role in ('owner', 'admin')
+    now = timezone.now()
+    thirty_days_ago = now - timedelta(days=30)
+
+    # ── Base session querysets ─────────────────────────────────────────────────
+    all_qs = Container.objects.filter(workspace=ws)
+    if not is_privileged:
+        all_qs = all_qs.filter(user=request.auth)
+
+    active_qs = all_qs.filter(active=True)
+    recent_qs = all_qs.filter(date_created__gte=thirty_days_ago)
+    closed_recent = recent_qs.filter(active=False, closed_at__isnull=False)
+
+    # ── Stat counts ───────────────────────────────────────────────────────────
+    active_count = active_qs.count()
+    total_sessions_30d = recent_qs.count()
+
+    cost_agg = closed_recent.aggregate(total=Sum('session_cost_usd'))
+    total_cost = float(cost_agg['total'] or 0)
+
+    # Average duration (seconds) over the last 30 days
+    durations = [
+        (c.closed_at - c.start_time).total_seconds()
+        for c in closed_recent.only('start_time', 'closed_at')
+        if c.start_time and c.closed_at
+    ]
+    avg_duration = (sum(durations) / len(durations)) if durations else 0
+
+    # ── Active sessions detail ────────────────────────────────────────────────
+    active_sessions = []
+    for c in active_qs.select_related('user').order_by('-start_time')[:10]:
+        active_sessions.append({
+            "uuid": str(c.uuid),
+            "type": c.type,
+            "user_email": c.user.email if c.user else None,
+            "start_time": c.start_time.isoformat() if c.start_time else None,
+            "capacity_provider": c.capacity_provider,
+        })
+
+    # ── Recent session history (last 5) ──────────────────────────────────────
+    recent_history = []
+    for c in all_qs.select_related('user', 'case').order_by('-date_created')[:5]:
+        duration = None
+        if c.start_time and c.closed_at:
+            duration = (c.closed_at - c.start_time).total_seconds()
+        recent_history.append({
+            "uuid": str(c.uuid),
+            "type": c.type,
+            "user_email": c.user.email if c.user else None,
+            "active": c.active,
+            "start_time": c.start_time.isoformat() if c.start_time else None,
+            "closed_at": c.closed_at.isoformat() if c.closed_at else None,
+            "duration_seconds": duration,
+            "capacity_provider": c.capacity_provider,
+            "session_cost_usd": str(c.session_cost_usd) if c.session_cost_usd else None,
+            "case_name": c.case.name if c.case else None,
+            "case_uuid": str(c.case.uuid) if c.case else None,
+        })
+
+    # ── Cases summary ─────────────────────────────────────────────────────────
+    cases_qs = Case.objects.filter(workspace=ws)
+    if not is_privileged:
+        cases_qs = cases_qs.filter(created_by=request.auth)
+
+    cases_agg = cases_qs.aggregate(
+        open=Count('id', filter=Q(status='open')),
+        closed=Count('id', filter=Q(status='closed')),
+        archived=Count('id', filter=Q(status='archived')),
+    )
+    recent_cases = []
+    for case in cases_qs.order_by('-updated_at')[:5]:
+        recent_cases.append({
+            "uuid": str(case.uuid),
+            "name": case.name,
+            "status": case.status,
+            "updated_at": case.updated_at.isoformat(),
+            "session_count": case.sessions.count(),
+        })
+
+    # ── Most-used apps (last 30 days) ────────────────────────────────────────
+    top_apps = list(
+        recent_qs
+        .exclude(type__isnull=True)
+        .values('type')
+        .annotate(count=Count('id'))
+        .order_by('-count')[:5]
+    )
+
+    # ── Sessions per day (last 14 days, for sparkline) ────────────────────────
+    fourteen_days_ago = now - timedelta(days=14)
+    sessions_per_day_qs = (
+        all_qs
+        .filter(date_created__gte=fourteen_days_ago)
+        .extra(select={'day': "DATE(date_created)"})
+        .values('day')
+        .annotate(count=Count('id'))
+        .order_by('day')
+    )
+    sessions_per_day = [
+        {"date": str(row['day']), "sessions": row['count']}
+        for row in sessions_per_day_qs
+    ]
+
+    # ── Member info (privileged only) ────────────────────────────────────────
+    members = []
+    if is_privileged:
+        for m in ws.memberships.select_related('user').all():
+            active_count_for_user = Container.objects.filter(
+                workspace=ws, user=m.user, active=True
+            ).count()
+            members.append({
+                "user_id": m.user.id,
+                "email": m.user.email,
+                "role": m.role,
+                "active_sessions": active_count_for_user,
+            })
+
+    return {
+        "role": membership.role,
+        "is_personal": ws.is_personal,
+        "stats": {
+            "active_sessions": active_count,
+            "total_sessions_30d": total_sessions_30d,
+            "total_cost_30d_usd": round(total_cost, 4),
+            "avg_duration_seconds": round(avg_duration),
+        },
+        "active_sessions": active_sessions,
+        "recent_history": recent_history,
+        "cases": {
+            "open": cases_agg['open'],
+            "closed": cases_agg['closed'],
+            "archived": cases_agg['archived'],
+            "recent": recent_cases,
+        },
+        "top_apps": top_apps,
+        "sessions_per_day": sessions_per_day,
+        "members": members,
+    }
+
+
 @router.put("/{ws_uuid}/browsers/", response=list[str], auth=session_mfa_auth)
 def set_workspace_browsers(request: HttpRequest, ws_uuid: UUID, payload: BrowserSlugsIn):
     """Set the allowed browsers for a workspace.

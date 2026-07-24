@@ -33,6 +33,7 @@ import {
   Settings2Icon,
   LayoutDashboardIcon,
   Building2Icon,
+  GaugeIcon,
 } from 'lucide-react'
 import { WorkspaceSwitcher } from './workspace-switcher'
 import { NavUser } from './nav-user'
@@ -174,6 +175,14 @@ function WorkspaceSection() {
         <SidebarGroupLabel>Workspace</SidebarGroupLabel>
         <SidebarGroupContent>
           <SidebarMenu>
+            <SidebarMenuItem>
+              <SidebarMenuButton tooltip="Dashboard" asChild
+                isActive={activeWorkspace ? pathname === `/${activeWorkspace.uuid}/dashboard` : false}>
+                <a href={activeWorkspace ? `/${activeWorkspace.uuid}/dashboard` : '#'}>
+                  <GaugeIcon /><span>Dashboard</span>
+                </a>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
             <SidebarMenuItem>
               <SidebarMenuButton tooltip="Launch App" asChild
                 isActive={activeWorkspace ? pathname === `/${activeWorkspace.uuid}` : false}>

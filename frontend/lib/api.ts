@@ -155,6 +155,65 @@ export interface Workspace {
   enable_file_protection: boolean;
 }
 
+export interface DashboardActiveSession {
+  uuid: string;
+  type: string | null;
+  user_email: string | null;
+  start_time: string | null;
+  capacity_provider: string | null;
+}
+
+export interface DashboardHistorySession {
+  uuid: string;
+  type: string | null;
+  user_email: string | null;
+  active: boolean;
+  start_time: string | null;
+  closed_at: string | null;
+  duration_seconds: number | null;
+  capacity_provider: string | null;
+  session_cost_usd: string | null;
+  case_name: string | null;
+  case_uuid: string | null;
+}
+
+export interface DashboardCase {
+  uuid: string;
+  name: string;
+  status: string;
+  updated_at: string;
+  session_count: number;
+}
+
+export interface DashboardMember {
+  user_id: number;
+  email: string;
+  role: string;
+  active_sessions: number;
+}
+
+export interface WorkspaceDashboard {
+  role: string;
+  is_personal: boolean;
+  stats: {
+    active_sessions: number;
+    total_sessions_30d: number;
+    total_cost_30d_usd: number;
+    avg_duration_seconds: number;
+  };
+  active_sessions: DashboardActiveSession[];
+  recent_history: DashboardHistorySession[];
+  cases: {
+    open: number;
+    closed: number;
+    archived: number;
+    recent: DashboardCase[];
+  };
+  top_apps: { type: string; count: number }[];
+  sessions_per_day: { date: string; sessions: number }[];
+  members: DashboardMember[];
+}
+
 export interface WorkspaceMember {
   user_id: number;
   username: string;
@@ -421,6 +480,9 @@ export const workspacesApi = {
 
   deleteLogo: (uuid: string, csrfToken: string) =>
     apiFetch<{ status: string }>(`/v1/workspaces/${uuid}/logo/`, { method: 'DELETE', csrfToken }),
+
+  getDashboard: (uuid: string) =>
+    apiFetch<WorkspaceDashboard>(`/v1/workspaces/${uuid}/dashboard/`),
 };
 
 // ─── Account ──────────────────────────────────────────────────────────────────
