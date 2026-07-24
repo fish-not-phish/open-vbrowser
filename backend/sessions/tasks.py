@@ -1,6 +1,10 @@
+import logging
+
 from celery import shared_task
 from django.utils import timezone
 from django.core.management import call_command
+
+logger = logging.getLogger(__name__)
 
 
 @shared_task
@@ -31,27 +35,42 @@ def delete_container(uuid):
     ip_address = str(container.ip_address)
     task_arn = str(container.task_arn)
 
+    now = timezone.now()
+
     try:
         oc = OpenContainers.objects.get(container=container)
-        oc.closed_at = timezone.now()
-        oc.save()
+        if not oc.closed_at:
+            oc.closed_at = now
+            oc.save(update_fields=['closed_at'])
     except OpenContainers.DoesNotExist:
         pass
 
     container.active = False
-    if container.closed_at is None or container.closed_at == '':
-        container.closed_at = timezone.now()
+    if not container.closed_at:
+        container.closed_at = now
 
-    # Compute estimated cost before saving
+    # Compute estimated cost before saving.
     container.session_cost_usd = compute_session_cost(container)
-    container.save()
+    container.save(update_fields=['active', 'closed_at', 'session_cost_usd'])
 
     call_command('delete', task_arn=task_arn, public_ip=ip_address)
+
+
+@shared_task
+def delete_dns_record(task_arn: str, public_ip: str):
+    """
+    DNS-only cleanup for containers whose ECS task has already stopped.
+
+    Called by _reconcile_close instead of a blocking call_command() so that
+    Cloudflare HTTP requests (with retries) happen asynchronously in a Celery
+    worker rather than blocking the close_containers management command. (#3)
+    """
+    call_command('delete', task_arn=task_arn, public_ip=public_ip, skip_ecs_stop=True)
 
 
 @shared_task
 def run_close_containers():
     try:
         call_command('close_containers')
-    except Exception as e:
-        print(f"Error occurred while running management command: {e}")
+    except Exception:
+        logger.exception("close_containers management command raised an exception")  # (#6)

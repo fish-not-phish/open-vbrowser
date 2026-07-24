@@ -72,7 +72,7 @@ class OpenContainers(models.Model):
     """Tracks live/open containers for idle-timeout enforcement."""
     container = models.ForeignKey(Container, on_delete=models.SET_NULL, null=True)
     container_uuid = models.CharField("UUID", max_length=255, null=True)
-    last_ping_at = models.DateTimeField(auto_now_add=True)
+    last_ping_at = models.DateTimeField(default=timezone.now)
     opened_at = models.DateTimeField(auto_now_add=True)
     closed_at = models.DateTimeField(null=True, blank=True)
 
