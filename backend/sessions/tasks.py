@@ -9,7 +9,8 @@ logger = logging.getLogger(__name__)
 
 @shared_task
 def start_container(uuid, browser_type, auto_open_url, username, session_type,
-                    enable_traffic_log=False, file_protection=False):
+                    enable_traffic_log=False, file_protection=False,
+                    idle_timeout_minutes=None):
     call_command(
         'start',
         browser_type=browser_type,
@@ -19,6 +20,7 @@ def start_container(uuid, browser_type, auto_open_url, username, session_type,
         session_type=session_type,
         enable_traffic_log=enable_traffic_log,
         file_protection=file_protection,
+        idle_timeout_minutes=idle_timeout_minutes,
     )
 
 

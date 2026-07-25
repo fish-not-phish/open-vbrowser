@@ -37,6 +37,7 @@ class SessionDetailOut(Schema):
     memory_gb: Optional[Decimal] = None
     session_cost_usd: Optional[Decimal] = None
     workspace_slug: Optional[str] = None
+    workspace_uuid: Optional[UUID] = None
     case_id: Optional[int] = None
     tags: list[str] = []
     enable_traffic_log: bool = False

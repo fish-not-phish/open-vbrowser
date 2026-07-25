@@ -78,7 +78,8 @@ def _dev_run_browser_task(container_uuid):
 
 
 def run_browser_task(browser_type, container_uuid, auto_open_url, username, session_type,
-                     enable_traffic_log=False, file_protection=False):
+                     enable_traffic_log=False, file_protection=False,
+                     idle_timeout_minutes=None):
     if DEV_MODE:
         return _dev_run_browser_task(container_uuid)
 
@@ -115,7 +116,7 @@ def run_browser_task(browser_type, container_uuid, auto_open_url, username, sess
                 {'name': 'ENTERPRISE',              'value': "yes"},
                 {'name': 'SAAS',                    'value': "yes"},
                 {'name': 'CUSTOM_DOMAIN',           'value': CUSTOM_DOMAIN},
-                {'name': 'DEFAULT_IDLE_THRESHOLD',  'value': str(DEFAULT_IDLE_THRESHOLD)},
+                {'name': 'DEFAULT_IDLE_THRESHOLD',  'value': str(idle_timeout_minutes if idle_timeout_minutes is not None else DEFAULT_IDLE_THRESHOLD)},
                 {'name': 'ENABLE_TRAFFIC_LOG',      'value': 'true' if enable_traffic_log else 'false'},
                 {'name': 'FILE_PROTECTION',         'value': 'true' if file_protection else 'false'},
             ]
@@ -249,6 +250,7 @@ def lambda_handler(event, context):
         session_type=params.get('session_type', 'vstandard'),
         enable_traffic_log=params.get('enable_traffic_log', False),
         file_protection=params.get('file_protection', False),
+        idle_timeout_minutes=params.get('idle_timeout_minutes'),
     )
 
 
@@ -264,6 +266,7 @@ class Command(BaseCommand):
         parser.add_argument('--session_type', default='vstandard')
         parser.add_argument('--enable_traffic_log', default=False, type=lambda x: x in (True, 'True', 'true', '1'))
         parser.add_argument('--file_protection', default=False, type=lambda x: x in (True, 'True', 'true', '1'))
+        parser.add_argument('--idle_timeout_minutes', default=None, type=int)
 
     def handle(self, *args, **options):
         result = lambda_handler({'queryStringParameters': options}, context=None)

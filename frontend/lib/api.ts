@@ -33,6 +33,7 @@ export interface SessionDetail {
   memory_gb: string | null;
   session_cost_usd: string | null;
   workspace_slug: string | null;
+  workspace_uuid: string | null;
   case_id: number | null;
   tags: string[];
   enable_traffic_log: boolean;

@@ -39,6 +39,7 @@ def _get_effective_max_concurrent(user):
 
 def _session_to_detail(container: Container) -> dict:
     workspace_slug = container.workspace.slug if container.workspace else None
+    workspace_uuid = container.workspace.uuid if container.workspace else None
     tags = list(container.tags.values_list('name', flat=True))
     case_id = container.case_id
     return {
@@ -56,6 +57,7 @@ def _session_to_detail(container: Container) -> dict:
         "memory_gb": container.memory_gb,
         "session_cost_usd": container.session_cost_usd,
         "workspace_slug": workspace_slug,
+        "workspace_uuid": workspace_uuid,
         "case_id": case_id,
         "tags": tags,
         "enable_traffic_log": container.enable_traffic_log,
@@ -248,6 +250,12 @@ def create_session(request: HttpRequest, payload: SessionCreateIn):
         file_protection=enable_file_protection,
     )
 
+    # Resolve the idle timeout for this session now (same logic as close_containers)
+    # so the ECS container environment reflects the per-workspace/user/site value
+    # rather than the global DEFAULT_IDLE_THRESHOLD constant.
+    from sessions.management.commands.close_containers import get_idle_threshold
+    _idle_timeout_minutes = get_idle_threshold(container, _site)
+
     start_container.delay(
         str(container.uuid),
         payload.browser_type,
@@ -256,6 +264,7 @@ def create_session(request: HttpRequest, payload: SessionCreateIn):
         payload.session_type or 'vstandard',
         enable_traffic_log,
         enable_file_protection,
+        _idle_timeout_minutes,
     )
 
     return 201, _session_to_detail(container)

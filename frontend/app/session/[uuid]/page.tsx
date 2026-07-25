@@ -24,9 +24,10 @@ import {
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
-const PING_INTERVAL_MS   = 10_000;
-const POLL_INTERVAL_MS   = 5_000;
-const MAX_LIVE_EVENTS    = 200;
+const PING_INTERVAL_MS          = 10_000;
+const POLL_INTERVAL_MS          = 5_000;
+const SESSION_CHECK_INTERVAL_MS = 10_000;
+const MAX_LIVE_EVENTS           = 200;
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -93,6 +94,17 @@ export default function SessionPage() {
   async function loadSession() {
     try {
       const s = await sessionsApi.get(uuid);
+
+      // If the session is already closed, go straight to the history page
+      if (!s.active) {
+        if (s.workspace_uuid) {
+          router.replace(`/${s.workspace_uuid}/history/${s.uuid}`);
+        } else {
+          router.replace("/");
+        }
+        return;
+      }
+
       setSession(s);
       setHasTrafficLog(!!s.enable_traffic_log);
       if (s.start_time) startedAt.current = new Date(s.start_time);
@@ -110,16 +122,53 @@ export default function SessionPage() {
   }
 
   // ─────────────────────────────────────────────────────────────────────────
-  // Ping heartbeat
+  // Ping heartbeat — redirect to history when session terminates (404)
   // ─────────────────────────────────────────────────────────────────────────
+
+  const redirectToHistory = React.useCallback((s: SessionDetail) => {
+    if (s.workspace_uuid) {
+      router.replace(`/${s.workspace_uuid}/history/${s.uuid}`);
+    } else {
+      router.replace("/");
+    }
+  }, [router]);
 
   React.useEffect(() => {
     if (!user.csrfToken || !session?.active) return;
-    const ping = () => sessionsApi.ping(uuid, user.csrfToken!).catch(() => {});
+    const ping = async () => {
+      try {
+        await sessionsApi.ping(uuid, user.csrfToken!);
+      } catch (err: unknown) {
+        // 404 means the session no longer exists on the server
+        if (err instanceof Error && err.message.startsWith("API 404")) {
+          redirectToHistory(session);
+        }
+      }
+    };
     ping();
     const id = setInterval(ping, PING_INTERVAL_MS);
     return () => clearInterval(id);
   }, [uuid, user.csrfToken, session?.active]);
+
+  // ─────────────────────────────────────────────────────────────────────────
+  // Session status polling — detect server-side termination (idle timeout etc.)
+  // ─────────────────────────────────────────────────────────────────────────
+
+  React.useEffect(() => {
+    if (!session?.active) return;
+    const check = async () => {
+      try {
+        const updated = await sessionsApi.get(uuid);
+        if (!updated.active) {
+          redirectToHistory(updated);
+        }
+      } catch {
+        // Ignore transient errors; ping will catch hard 404s
+      }
+    };
+    const id = setInterval(check, SESSION_CHECK_INTERVAL_MS);
+    return () => clearInterval(id);
+  }, [uuid, session?.active]);
 
   // ─────────────────────────────────────────────────────────────────────────
   // Elapsed timer
