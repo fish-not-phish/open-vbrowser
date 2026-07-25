@@ -90,6 +90,25 @@
       transition: background-color 0.15s;
     }
     .btn-primary:hover { background-color: #e08090; text-decoration: none; color: var(--bg); }
+    .btn-secondary {
+      display: block;
+      width: 100%;
+      padding: 10px;
+      font-family: inherit;
+      font-size: 0.9rem;
+      font-weight: 600;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: var(--pink);
+      background: transparent;
+      border: 1px solid var(--border);
+      border-radius: 2px;
+      cursor: pointer;
+      text-decoration: none;
+      transition: border-color 0.15s, background 0.15s;
+      margin-bottom: 10px;
+    }
+    .btn-secondary:hover { border-color: var(--pink); background: rgba(207,114,135,0.08); color: var(--pink); text-decoration: none; }
     .btn-outline-danger {
       display: inline-block;
       padding: 8px 16px;
@@ -125,6 +144,10 @@
       <p class="status-ok">{% trans "Authenticator app is active." %}</p>
       <p class="subtitle">{% trans "Your account is protected with multi-factor authentication." %}</p>
 
+      {% if CUSTOM_DOMAIN %}
+        <a href="https://{{ CUSTOM_DOMAIN }}" class="btn-secondary">{% trans "Home" %}</a>
+      {% endif %}
+
       {% url 'mfa_deactivate_totp' as deactivate_url %}
       <a href="{{ deactivate_url }}" class="btn-outline-danger">{% trans "Deactivate Authenticator App" %}</a>
 
@@ -135,9 +158,13 @@
       {% url 'mfa_activate_totp' as activate_url %}
       <a href="{{ activate_url }}" class="btn-primary">{% trans "Set up authenticator app" %}</a>
 
+      {% if CUSTOM_DOMAIN %}
+        <a href="https://{{ CUSTOM_DOMAIN }}" style="display:block;text-align:center;font-size:0.82rem;color:var(--pink-dim);margin-top:16px;">{% trans "Home" %}</a>
+      {% endif %}
+
     {% endif %}
 
-    <p class="copyright">Copyright &copy; Company Name. All Rights Reserved.</p>
+    <p class="copyright">Copyright &copy; Open vBrowser. All Rights Reserved.</p>
 
   </div>
 
