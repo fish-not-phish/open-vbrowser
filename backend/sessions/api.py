@@ -159,10 +159,10 @@ def create_session(request: HttpRequest, payload: SessionCreateIn):
     if active_count >= max_concurrent:
         raise HttpError(429, f"Concurrent session limit reached ({max_concurrent})")
 
-    # Resolve workspace if provided
+    # Resolve workspace if provided, otherwise fall back to the user's personal workspace
+    from workspaces.models import Workspace
     workspace = None
     if payload.workspace_uuid:
-        from workspaces.models import Workspace
         try:
             workspace = Workspace.objects.get(
                 uuid=payload.workspace_uuid,
@@ -176,6 +176,13 @@ def create_session(request: HttpRequest, payload: SessionCreateIn):
             from users.models import SiteSettings
             if not SiteSettings.get().allow_personal_workspaces:
                 raise HttpError(403, "Personal workspaces are currently disabled")
+    else:
+        # No workspace specified — fall back to the user's personal workspace if enabled
+        from users.models import SiteSettings
+        if SiteSettings.get().allow_personal_workspaces:
+            workspace = Workspace.objects.filter(
+                memberships__user=user, is_personal=True
+            ).first()
 
         # Workspace-level concurrent sessions check
         if workspace.max_concurrent_sessions_per_member is not None:

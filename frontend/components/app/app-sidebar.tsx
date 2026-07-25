@@ -199,14 +199,16 @@ function WorkspaceSection() {
                 </a>
               </SidebarMenuButton>
             </SidebarMenuItem>
-            <SidebarMenuItem>
-              <SidebarMenuButton tooltip="Cases" asChild
-                isActive={activeWorkspace ? pathname.startsWith(`/${activeWorkspace.uuid}/cases`) : false}>
-                <a href={activeWorkspace ? `/${activeWorkspace.uuid}/cases` : '#'}>
-                  <FolderOpenIcon /><span>Cases</span>
-                </a>
-              </SidebarMenuButton>
-            </SidebarMenuItem>
+            {!activeWorkspace?.is_personal && (
+              <SidebarMenuItem>
+                <SidebarMenuButton tooltip="Cases" asChild
+                  isActive={activeWorkspace ? pathname.startsWith(`/${activeWorkspace.uuid}/cases`) : false}>
+                  <a href={activeWorkspace ? `/${activeWorkspace.uuid}/cases` : '#'}>
+                    <FolderOpenIcon /><span>Cases</span>
+                  </a>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+            )}
 
             {activeWorkspace && (
               <SidebarMenuItem>

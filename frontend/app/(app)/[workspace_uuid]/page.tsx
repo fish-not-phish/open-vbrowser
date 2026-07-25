@@ -222,7 +222,7 @@ export default function HomePage() {
             browser_type: browser.slug,
             auto_open_url: openUrl,
             session_type: useSpot || browser.requires_spot ? "vspot" : "vstandard",
-            workspace_uuid: activeWorkspace?.is_personal ? undefined : activeWorkspace?.uuid,
+            workspace_uuid: activeWorkspace?.uuid,
             enable_traffic_log: networkLogging && !TRAFFIC_LOG_UNSUPPORTED.has(browser.slug),
             file_protection: fileProtection,
           },

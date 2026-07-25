@@ -194,7 +194,7 @@ if [[ -n "$old_digests" ]]; then
       --repository-name "$ECR_REPO" \
       --region "$AWS_REGION" \
       --image-ids "${image_ids[@]}" \
-      --output text > /dev/null 2>&1
+      --output text 2>&1 || echo "  ⚠  batch-delete-image failed for this chunk (non-fatal)"
   done
   echo "→ Done."
 else
