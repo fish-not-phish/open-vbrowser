@@ -687,7 +687,7 @@ def admin_analytics(
         for r in cost_ws_qs
     ]
 
-    # ── Sessions per day (time-series, for the trend line chart) ─────────────
+    # ── Sessions + spend per day (time-series, for the trend line chart) ────────
     from django.db.models.functions import TruncDate
     import datetime as dt
 
@@ -695,21 +695,26 @@ def admin_analytics(
         base_qs
         .annotate(day=TruncDate('date_created'))
         .values('day')
-        .annotate(sessions=Count('id'))
+        .annotate(sessions=Count('id'), cost=Sum('session_cost_usd'))
         .order_by('day')
     )
 
     # Fill gaps so the chart line is continuous
-    daily_map = {r['day']: r['sessions'] for r in daily_qs if r['day']}
+    daily_map = {
+        r['day']: {'sessions': r['sessions'], 'cost_usd': float(r['cost'] or 0)}
+        for r in daily_qs if r['day']
+    }
     if daily_map:
         first_day = min(daily_map)
         last_day = max(daily_map)
         sessions_per_day = []
         cursor = first_day
         while cursor <= last_day:
+            entry = daily_map.get(cursor, {'sessions': 0, 'cost_usd': 0.0})
             sessions_per_day.append({
                 'date': cursor.strftime('%Y-%m-%d'),
-                'sessions': daily_map.get(cursor, 0),
+                'sessions': entry['sessions'],
+                'cost_usd': round(entry['cost_usd'], 4),
             })
             cursor += dt.timedelta(days=1)
     else:

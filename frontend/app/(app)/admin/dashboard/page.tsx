@@ -431,6 +431,110 @@ function SessionTrendChart({ data, loading }: { data: AdminAnalytics | null; loa
   );
 }
 
+// ─── Spend trend line chart ───────────────────────────────────────────────────
+
+const spendTrendConfig = {
+  cost_usd: { label: "Spend (USD)", color: "var(--chart-2)" },
+} satisfies ChartConfig;
+
+const ADMIN_SPEND_COLOR = "var(--chart-2)";
+
+function SpendTrendChart({ data, loading }: { data: AdminAnalytics | null; loading: boolean }) {
+  // Filter to days with actual spend so zero-days don't crush the Y scale
+  const allData: SessionsPerDayRow[] = data?.sessions_per_day ?? [];
+  const chartData = allData.filter((d) => (d.cost_usd ?? 0) > 0);
+  const totalCost = allData.reduce((s, d) => s + (d.cost_usd ?? 0), 0);
+
+  const tickInterval = chartData.length <= 14 ? 0
+    : chartData.length <= 60 ? Math.floor(chartData.length / 10)
+    : Math.floor(chartData.length / 8);
+
+  const maxCost = chartData.length ? Math.max(...chartData.map((d) => d.cost_usd ?? 0)) : 0;
+  const yFormatter = (v: number) =>
+    maxCost < 0.01 ? `$${v.toFixed(4)}` : maxCost < 1 ? `$${v.toFixed(3)}` : `$${v.toFixed(2)}`;
+
+  return (
+    <div className="flex min-w-0 flex-1 flex-col rounded-xl border bg-card">
+      <div className="flex h-14 items-center justify-between border-b px-4 sm:px-5">
+        <div className="flex items-center gap-2.5">
+          <Button variant="outline" size="icon" className="size-8" aria-label="Spend">
+            <DollarSign className="size-4 text-muted-foreground" />
+          </Button>
+          <h2 className="text-sm font-medium">Daily Spend</h2>
+        </div>
+        <div className="flex items-center gap-1.5">
+          <div className="size-2 rounded-full" style={{ backgroundColor: ADMIN_SPEND_COLOR }} />
+          <span className="text-xs text-muted-foreground">USD / day</span>
+        </div>
+      </div>
+      <div className="flex flex-col gap-4 p-4 sm:p-5">
+        <div className="flex flex-col gap-1">
+          {loading ? <Skeleton className="h-7 w-24" /> : (
+            <p className="text-2xl font-semibold tracking-tight">${totalCost.toFixed(4)}</p>
+          )}
+          <p className="text-[10px] tracking-wider text-muted-foreground uppercase">
+            {chartData.length > 0 ? `${chartData.length} day${chartData.length !== 1 ? "s" : ""} with spend` : "No spend in range"}
+          </p>
+        </div>
+        <div className="h-[180px] w-full min-w-0 sm:h-[220px]">
+          {loading ? <Skeleton className="h-full w-full" /> : chartData.length === 0 ? (
+            <div className="flex h-full items-center justify-center">
+              <p className="text-sm text-muted-foreground">No spend data</p>
+            </div>
+          ) : (
+            <ChartContainer config={spendTrendConfig} className="h-full w-full">
+              <LineChart data={chartData} margin={{ top: 8, right: 8, bottom: 0, left: 4 }}>
+                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="hsl(var(--border))" />
+                <XAxis
+                  dataKey="date"
+                  axisLine={false}
+                  tickLine={false}
+                  tick={{ fontSize: 10 }}
+                  dy={8}
+                  interval={tickInterval}
+                  tickFormatter={formatChartDate}
+                />
+                <YAxis
+                  axisLine={false}
+                  tickLine={false}
+                  tick={{ fontSize: 10 }}
+                  dx={-5}
+                  width={56}
+                  domain={["auto", "auto"]}
+                  tickFormatter={yFormatter}
+                />
+                <Tooltip
+                  content={({ active, payload, label }) => {
+                    if (!active || !payload?.length) return null;
+                    return (
+                      <div className="rounded-lg border bg-popover p-2 shadow-lg text-xs">
+                        <p className="font-medium mb-1">{formatChartDate(label as string)}</p>
+                        <div className="flex items-center gap-1.5">
+                          <div className="size-2 rounded-full" style={{ backgroundColor: ADMIN_SPEND_COLOR }} />
+                          <span className="text-muted-foreground">Spend:</span>
+                          <span className="font-medium">${Number(payload[0].value).toFixed(4)}</span>
+                        </div>
+                      </div>
+                    );
+                  }}
+                />
+                <Line
+                  type="monotone"
+                  dataKey="cost_usd"
+                  stroke={ADMIN_SPEND_COLOR}
+                  strokeWidth={2}
+                  dot={{ r: 4, fill: ADMIN_SPEND_COLOR, stroke: "var(--background)", strokeWidth: 2 }}
+                  activeDot={{ r: 6, fill: ADMIN_SPEND_COLOR, stroke: "var(--background)", strokeWidth: 2 }}
+                />
+              </LineChart>
+            </ChartContainer>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ─── App usage horizontal bar chart ──────────────────────────────────────────
 
 const appChartConfig = { session_count: { label: "Sessions", color: palette.primary } } satisfies ChartConfig;
@@ -835,13 +939,18 @@ export default function AdminDashboardPage() {
         {/* Stat cards */}
         <StatCards data={analytics} loading={loading} />
 
-        {/* Charts row 1 */}
+        {/* Charts row 1 — session + spend trends */}
         <div className="flex flex-col gap-4 sm:gap-6 xl:flex-row">
           <SessionTrendChart data={analytics} loading={loading} />
+          <SpendTrendChart data={analytics} loading={loading} />
+        </div>
+
+        {/* Charts row 2 — app usage + workspace breakdowns */}
+        <div className="flex flex-col gap-4 sm:gap-6 xl:flex-row">
           <AppUsageChart data={analytics} loading={loading} />
         </div>
 
-        {/* Charts row 2 */}
+        {/* Charts row 3 */}
         <div className="grid gap-4 sm:gap-6 lg:grid-cols-3">
           <WorkspaceRadarChart data={analytics} loading={loading} />
           <SessionStatusChart data={analytics} loading={loading} />

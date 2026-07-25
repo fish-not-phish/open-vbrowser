@@ -139,10 +139,13 @@ export default function CasesPage() {
   const { workspaces, setActiveWorkspace } = useWorkspace();
   const router = useRouter();
 
-  // Sync active workspace from URL param
+  // Sync active workspace from URL param + redirect personal workspaces away
   React.useEffect(() => {
     const ws = workspaces.find((w) => w.uuid === workspace_uuid);
-    if (ws) setActiveWorkspace(ws);
+    if (ws) {
+      setActiveWorkspace(ws);
+      if (ws.is_personal) router.replace(`/${workspace_uuid}/dashboard`);
+    }
   }, [workspace_uuid, workspaces]);
 
   const [cases, setCases] = React.useState<Case[]>([]);

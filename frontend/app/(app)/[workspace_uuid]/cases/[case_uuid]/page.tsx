@@ -4,6 +4,7 @@ import React from "react";
 import { useParams, useRouter } from "next/navigation";
 import { casesApi, workspacesApi, type Case, type CaseSession, type CaseComment, type CaseAttachment, type WorkspaceMember } from "@/lib/api";
 import { useAuthContext } from "@/store/AuthContext";
+import { useWorkspace } from "@/store/WorkspaceContext";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -518,7 +519,14 @@ function SessionsTab({ sessions, workspaceUuid, onNavigate }: {
 export default function CaseDetailPage() {
   const { workspace_uuid, case_uuid: uuid } = useParams<{ workspace_uuid: string; case_uuid: string }>();
   const { user } = useAuthContext();
+  const { workspaces } = useWorkspace();
   const router = useRouter();
+
+  // Redirect personal workspaces away — cases are team-only
+  React.useEffect(() => {
+    const ws = workspaces.find((w) => w.uuid === workspace_uuid);
+    if (ws?.is_personal) router.replace(`/${workspace_uuid}/dashboard`);
+  }, [workspace_uuid, workspaces]);
 
   const [caseData, setCaseData] = React.useState<Case | null>(null);
   const [loading, setLoading] = React.useState(true);

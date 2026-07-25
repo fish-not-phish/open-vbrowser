@@ -590,20 +590,36 @@ def workspace_dashboard(request: HttpRequest, ws_uuid: UUID):
         .order_by('-count')[:5]
     )
 
-    # ── Sessions per day (last 14 days, for sparkline) ────────────────────────
+    # ── Sessions + spend per day (last 14 days) ───────────────────────────────
+    from django.db.models.functions import TruncDate
+    import datetime as _dt
+
     fourteen_days_ago = now - timedelta(days=14)
-    sessions_per_day_qs = (
+    daily_qs = (
         all_qs
         .filter(date_created__gte=fourteen_days_ago)
-        .extra(select={'day': "DATE(date_created)"})
+        .annotate(day=TruncDate('date_created'))
         .values('day')
-        .annotate(count=Count('id'))
+        .annotate(count=Count('id'), cost=Sum('session_cost_usd'))
         .order_by('day')
     )
-    sessions_per_day = [
-        {"date": str(row['day']), "sessions": row['count']}
-        for row in sessions_per_day_qs
-    ]
+    # Fill gaps so the chart line is continuous
+    daily_map = {
+        r['day']: {'sessions': r['count'], 'cost_usd': float(r['cost'] or 0)}
+        for r in daily_qs if r['day']
+    }
+    sessions_per_day = []
+    if daily_map:
+        cursor = fourteen_days_ago.date()
+        end = now.date()
+        while cursor <= end:
+            entry = daily_map.get(cursor, {'sessions': 0, 'cost_usd': 0.0})
+            sessions_per_day.append({
+                'date': cursor.strftime('%Y-%m-%d'),
+                'sessions': entry['sessions'],
+                'cost_usd': round(entry['cost_usd'], 4),
+            })
+            cursor += _dt.timedelta(days=1)
 
     # ── Member info (privileged only) ────────────────────────────────────────
     members = []

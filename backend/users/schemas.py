@@ -174,6 +174,7 @@ class AnalyticsWorkspaceRow(Schema):
 class SessionsPerDayRow(Schema):
     date: str        # "YYYY-MM-DD"
     sessions: int
+    cost_usd: float = 0.0
 
 
 class AdminAnalyticsOut(Schema):

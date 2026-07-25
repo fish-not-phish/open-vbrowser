@@ -211,7 +211,7 @@ export interface WorkspaceDashboard {
     recent: DashboardCase[];
   };
   top_apps: { type: string; count: number }[];
-  sessions_per_day: { date: string; sessions: number }[];
+  sessions_per_day: { date: string; sessions: number; cost_usd: number }[];
   members: DashboardMember[];
 }
 
@@ -554,6 +554,7 @@ export interface AnalyticsWorkspaceRow {
 export interface SessionsPerDayRow {
   date: string;     // "YYYY-MM-DD"
   sessions: number;
+  cost_usd: number;
 }
 
 export interface AdminAnalytics {

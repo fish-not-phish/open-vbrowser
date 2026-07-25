@@ -45,6 +45,9 @@ import {
   XAxis,
   YAxis,
   Cell,
+  Line,
+  LineChart,
+  Tooltip,
 } from "recharts";
 import { cn } from "@/lib/utils";
 
@@ -201,12 +204,88 @@ function SparklineChart({ data }: { data: { date: string; sessions: number }[] }
         />
         <YAxis tickLine={false} axisLine={false} tick={{ fontSize: 10 }} allowDecimals={false} />
         <ChartTooltip
-          content={<ChartTooltipContent />}
-          formatter={(v: number) => [v, "sessions"]}
-          labelFormatter={(l) => format(new Date(l), "MMM d, yyyy")}
+          content={
+            <ChartTooltipContent
+              labelFormatter={(l) => format(new Date(l), "MMM d, yyyy")}
+            />
+          }
         />
         <Bar dataKey="sessions" radius={[3, 3, 0, 0]} fill="var(--primary)" />
       </BarChart>
+    </ChartContainer>
+  );
+}
+
+// ─── Spend per day line chart ─────────────────────────────────────────────────
+
+const spendConfig: ChartConfig = {
+  cost_usd: { label: "Spend (USD)", color: "var(--chart-2)" },
+};
+
+const SPEND_COLOR = "var(--chart-2)";
+
+function SpendChart({ data }: { data: { date: string; sessions: number; cost_usd: number }[] }) {
+  // Only plot days that actually had spend — zero-cost days collapse the Y scale
+  const spendData = data.filter((d) => d.cost_usd > 0);
+  const totalCost = spendData.reduce((s, d) => s + d.cost_usd, 0);
+
+  if (!spendData.length) {
+    return (
+      <div className="flex items-center justify-center h-40 text-sm text-muted-foreground">
+        No spend data yet
+      </div>
+    );
+  }
+
+  // Format Y-axis labels at the right precision for the scale
+  const maxCost = Math.max(...spendData.map((d) => d.cost_usd));
+  const yFormatter = (v: number) =>
+    maxCost < 0.01 ? `$${v.toFixed(4)}` : maxCost < 1 ? `$${v.toFixed(3)}` : `$${v.toFixed(2)}`;
+
+  return (
+    <ChartContainer config={spendConfig} className="h-40 w-full">
+      <LineChart data={spendData} margin={{ top: 8, right: 8, left: 4, bottom: 0 }}>
+        <CartesianGrid vertical={false} strokeDasharray="3 3" className="stroke-border/40" />
+        <XAxis
+          dataKey="date"
+          tickLine={false}
+          axisLine={false}
+          tickMargin={6}
+          tick={{ fontSize: 10 }}
+          tickFormatter={(v) => format(new Date(v), "M/d")}
+        />
+        <YAxis
+          tickLine={false}
+          axisLine={false}
+          tick={{ fontSize: 10 }}
+          width={56}
+          domain={["auto", "auto"]}
+          tickFormatter={yFormatter}
+        />
+        <Tooltip
+          content={({ active, payload, label }) => {
+            if (!active || !payload?.length) return null;
+            return (
+              <div className="rounded-lg border bg-popover p-2 shadow-lg text-xs">
+                <p className="font-medium mb-1">{format(new Date(label), "MMM d, yyyy")}</p>
+                <div className="flex items-center gap-1.5">
+                  <div className="size-2 rounded-full" style={{ backgroundColor: SPEND_COLOR }} />
+                  <span className="text-muted-foreground">Spend:</span>
+                  <span className="font-medium">${Number(payload[0].value).toFixed(4)}</span>
+                </div>
+              </div>
+            );
+          }}
+        />
+        <Line
+          type="monotone"
+          dataKey="cost_usd"
+          stroke={SPEND_COLOR}
+          strokeWidth={2}
+          dot={{ r: 4, fill: SPEND_COLOR, stroke: "var(--background)", strokeWidth: 2 }}
+          activeDot={{ r: 6, fill: SPEND_COLOR, stroke: "var(--background)", strokeWidth: 2 }}
+        />
+      </LineChart>
     </ChartContainer>
   );
 }
@@ -219,10 +298,10 @@ const appsConfig: ChartConfig = {
 
 const APP_COLORS = [
   "var(--primary)",
-  "hsl(var(--chart-2))",
-  "hsl(var(--chart-3))",
-  "hsl(var(--chart-4))",
-  "hsl(var(--chart-5))",
+  "var(--chart-2)",
+  "var(--chart-3)",
+  "var(--chart-4)",
+  "var(--chart-5)",
 ];
 
 function TopAppsChart({ data }: { data: { type: string; count: number }[] }) {
@@ -239,7 +318,7 @@ function TopAppsChart({ data }: { data: { type: string; count: number }[] }) {
         <CartesianGrid horizontal={false} strokeDasharray="3 3" className="stroke-border/40" />
         <XAxis type="number" tickLine={false} axisLine={false} tick={{ fontSize: 10 }} allowDecimals={false} />
         <YAxis dataKey="type" type="category" tickLine={false} axisLine={false} tick={{ fontSize: 10 }} width={56} />
-        <ChartTooltip content={<ChartTooltipContent />} formatter={(v: number) => [v, "sessions"]} />
+        <ChartTooltip content={<ChartTooltipContent />} />
         <Bar dataKey="count" radius={[0, 3, 3, 0]}>
           {data.map((_, idx) => (
             <Cell key={idx} fill={APP_COLORS[idx % APP_COLORS.length]} />
@@ -353,7 +432,7 @@ export default function DashboardPage() {
             />
           </div>
 
-          {/* ── Activity chart + Active sessions ── */}
+          {/* ── Activity + Spend charts ── */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             {/* Sessions per day */}
             <Card>
@@ -368,6 +447,22 @@ export default function DashboardPage() {
               </CardContent>
             </Card>
 
+            {/* Spend per day */}
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm font-medium flex items-center gap-2">
+                  <DollarSign className="size-4 text-muted-foreground" />
+                  Spend per day (14d)
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <SpendChart data={data.sessions_per_day} />
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* ── Active sessions ── */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             {/* Active sessions */}
             <Card>
               <CardHeader className="pb-2">
