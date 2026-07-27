@@ -52,6 +52,11 @@ class Container(models.Model):
         default=False,
         help_text="Whether downloaded files were 7z-encrypted for this session"
     )
+    persistent_storage = models.BooleanField(
+        "Persistent Storage",
+        default=False,
+        help_text="Whether persistent S3 storage was mounted for this session"
+    )
     # Case and tags (linked from cases app)
     case = models.ForeignKey(
         'cases.Case', on_delete=models.SET_NULL,

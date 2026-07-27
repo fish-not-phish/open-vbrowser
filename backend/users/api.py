@@ -212,6 +212,7 @@ def _site_settings_out(config: SiteSettings) -> dict:
         "default_personal_browser_slugs": json.loads(config.default_personal_browser_slugs or '[]'),
         "enable_network_logging": config.enable_network_logging,
         "enable_file_protection": config.enable_file_protection,
+        "enable_persistent_storage": config.enable_persistent_storage,
         "browser_vcpu": float(config.browser_vcpu),
         "browser_memory_gb": float(config.browser_memory_gb),
         "os_vcpu": float(config.os_vcpu),
@@ -235,7 +236,7 @@ def update_site_settings(request: HttpRequest, payload: SiteSettingsIn):
         "oidc_client_id", "oidc_client_secret", "oidc_server_url",
         "default_idle_timeout_minutes", "default_max_concurrent_sessions",
         "default_max_session_duration_hours",
-        "enable_network_logging", "enable_file_protection",
+        "enable_network_logging", "enable_file_protection", "enable_persistent_storage",
         "browser_vcpu", "browser_memory_gb", "os_vcpu", "os_memory_gb",
     ]
     for field in fields:

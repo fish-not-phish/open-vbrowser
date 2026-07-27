@@ -112,6 +112,7 @@ def _ws_out(ws: Workspace, user, request: HttpRequest = None) -> dict:
         "logo_url": logo_url,
         "enable_network_logging": ws.enable_network_logging,
         "enable_file_protection": ws.enable_file_protection,
+        "enable_persistent_storage": ws.enable_persistent_storage,
     }
 
 
@@ -192,6 +193,8 @@ def update_workspace(request: HttpRequest, ws_uuid: UUID, payload: WorkspaceUpda
         ws.enable_network_logging = payload.enable_network_logging and _site.enable_network_logging
     if payload.enable_file_protection is not None:
         ws.enable_file_protection = payload.enable_file_protection and _site.enable_file_protection
+    if payload.enable_persistent_storage is not None:
+        ws.enable_persistent_storage = payload.enable_persistent_storage and _site.enable_persistent_storage
 
     ws.save()
     return _ws_out(ws, request.auth, request)

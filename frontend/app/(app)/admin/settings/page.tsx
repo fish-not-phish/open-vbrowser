@@ -12,7 +12,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "sonner";
 import { motion } from "motion/react";
 import {
-  Save, RotateCcw, CheckCircle2, Eye, EyeOff, Copy, Activity, Lock, Cpu,
+  Save, RotateCcw, CheckCircle2, Eye, EyeOff, Copy, Activity, Lock, Cpu, HardDrive,
 } from "lucide-react";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
@@ -531,6 +531,22 @@ export default function AdminSettingsPage() {
                   <Switch
                     checked={settings.enable_file_protection}
                     onCheckedChange={(v) => update("enable_file_protection", v)}
+                  />
+                </div>
+              </FieldRow>
+              <Separator />
+              <FieldRow
+                label="Persistent storage"
+                description="When enabled, workspace admins can allow members to mount per-workspace S3 storage at /config/Downloads for persistent files across sessions."
+              >
+                <div className="flex items-center gap-2">
+                  <HardDrive className={cn(
+                    "size-4 transition-colors",
+                    settings.enable_persistent_storage ? "text-purple-500" : "text-muted-foreground"
+                  )} />
+                  <Switch
+                    checked={settings.enable_persistent_storage}
+                    onCheckedChange={(v) => update("enable_persistent_storage", v)}
                   />
                 </div>
               </FieldRow>

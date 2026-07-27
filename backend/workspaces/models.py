@@ -31,6 +31,17 @@ class Workspace(models.Model):
         default=False,
         help_text="Allow members of this workspace to use file protection (requires global flag)."
     )
+    enable_persistent_storage = models.BooleanField(
+        default=False,
+        help_text="Allow members of this workspace to use persistent S3 storage (requires global flag)."
+    )
+    # S3 Files access point ARN — provisioned automatically when the workspace
+    # is created (if persistent storage is available). Null for personal workspaces
+    # or if provisioning failed.
+    s3files_access_point_arn = models.CharField(
+        max_length=500, blank=True, default='',
+        help_text="ARN of the S3 Files access point for this workspace's persistent storage."
+    )
 
     def __str__(self):
         return self.name

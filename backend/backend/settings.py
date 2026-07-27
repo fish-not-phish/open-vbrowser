@@ -422,6 +422,13 @@ VBROWSERS_PATH = os.environ.get('VBROWSERS_PATH', '/app/vbrowsers')
 AWS_STORAGE_BUCKET_NAME = os.environ.get('AWS_STORAGE_BUCKET_NAME', '')
 AWS_S3_REGION_NAME = AWS_REGION
 
+# ─── S3 Files (persistent storage) ───────────────────────────────────────────
+# File system ARN + ID provisioned by Terraform (modules/infrastructure/s3files.tf).
+# Used to mount per-workspace access points at /config/Downloads in ECS tasks.
+S3FILES_FILE_SYSTEM_ARN = os.environ.get('S3FILES_FILE_SYSTEM_ARN', '')
+S3FILES_FILE_SYSTEM_ID = os.environ.get('S3FILES_FILE_SYSTEM_ID', '')
+S3FILES_BUCKET_NAME = os.environ.get('S3FILES_BUCKET_NAME', '')
+
 
 # ─── Logging ──────────────────────────────────────────────────────────────────
 # Console logging is always active with a timestamped formatter.

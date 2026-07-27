@@ -162,6 +162,23 @@ resource "aws_iam_user_policy" "ovb_ecs_task_defs" {
           "arn:${data.aws_partition.current.partition}:ecs:${data.aws_region.current.region}:${data.aws_caller_identity.current.account_id}:task-definition/*",
           "arn:${data.aws_partition.current.partition}:ecs:${data.aws_region.current.region}:${data.aws_caller_identity.current.account_id}:task/${aws_ecs_cluster.browsers.name}/*"
         ]
+      },
+      {
+        Sid    = "AllowS3FilesAccessPointManagement"
+        Effect = "Allow"
+        Action = [
+          "s3files:DescribeFileSystem",
+          "s3files:DescribeAccessPoint",
+          "s3files:CreateAccessPoint",
+          "s3files:DeleteAccessPoint",
+          "s3files:ListAccessPoints",
+          "s3files:TagResource",
+          "s3files:UntagResource"
+        ]
+        Resource = [
+          aws_s3files_file_system.main.arn,
+          "${aws_s3files_file_system.main.arn}/access-point/*"
+        ]
       }
     ]
   })
@@ -196,4 +213,51 @@ resource "aws_iam_user_policy" "ovb_logs" {
       }
     ]
   })
+}
+
+# ── Backend S3 Files bucket object cleanup (workspace deprovisioning) ──────────
+# Grants the backend IAM user permission to list and delete objects (and their
+# versions) in the S3 Files bucket so a workspace's folder can be purged when
+# the workspace is deleted. Versioning is enabled on the bucket, so both
+# DeleteObject and DeleteObjectVersion are required.
+#
+# Implemented as a customer-managed policy (not inline) because the backend
+# user's inline policies already total ~1.9 KB of the 2 KB cumulative inline
+# quota — a separate inline policy would exceed it.
+resource "aws_iam_policy" "ovb_s3files_bucket" {
+  name        = "${var.project_name}-backend-s3files-bucket"
+  description = "Allow the backend to purge workspace folders from the S3 Files bucket on deprovisioning."
+
+  policy = jsonencode({
+    Version = var.iam_policy_version
+    Statement = [
+      {
+        Sid    = "ListS3FilesBucket"
+        Effect = "Allow"
+        Action = [
+          "s3:ListBucket",
+          "s3:ListBucketVersions"
+        ]
+        Resource = aws_s3_bucket.s3files.arn
+      },
+      {
+        Sid    = "DeleteS3FilesObjects"
+        Effect = "Allow"
+        Action = [
+          "s3:DeleteObject",
+          "s3:DeleteObjectVersion"
+        ]
+        Resource = "${aws_s3_bucket.s3files.arn}/*"
+      }
+    ]
+  })
+
+  tags = merge(var.common_tags, {
+    Name = "${var.project_name}-backend-s3files-bucket"
+  })
+}
+
+resource "aws_iam_user_policy_attachment" "ovb_s3files_bucket" {
+  user       = aws_iam_user.ovb.name
+  policy_arn = aws_iam_policy.ovb_s3files_bucket.arn
 }

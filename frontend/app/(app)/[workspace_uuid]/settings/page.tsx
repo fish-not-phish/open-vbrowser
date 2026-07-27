@@ -28,7 +28,7 @@ import {
 import { toast } from "sonner";
 import { AnimatePresence, motion } from "motion/react";
 import {
-  Activity, CheckCircle2, Crown, ImageIcon, Loader2, Lock, LogOut,
+  Activity, CheckCircle2, Crown, HardDrive, ImageIcon, Loader2, Lock, LogOut,
   RotateCcw, Save, Trash2, TrashIcon,
   UploadCloudIcon, UserMinusIcon, UserPlus, UsersIcon, X,
 } from "lucide-react";
@@ -391,6 +391,7 @@ export default function WorkspaceSettingsPage() {
             max_session_duration_hours: ws.max_session_duration_hours,
             enable_network_logging: ws.enable_network_logging,
             enable_file_protection: ws.enable_file_protection,
+            enable_persistent_storage: ws.enable_persistent_storage,
           },
           user.csrfToken
         );
@@ -795,10 +796,11 @@ export default function WorkspaceSettingsPage() {
             {!ws.is_personal && <Separator />}
 
             {/* Session Features — only shown for team workspaces when at least one is globally enabled */}
-            {!ws.is_personal && (siteSettings?.enable_network_logging || siteSettings?.enable_file_protection) && (() => {
+            {!ws.is_personal && (siteSettings?.enable_network_logging || siteSettings?.enable_file_protection || siteSettings?.enable_persistent_storage) && (() => {
               const networkEnabled = !!siteSettings?.enable_network_logging;
               const fileProtEnabled = !!siteSettings?.enable_file_protection;
-              const featuresShown = [networkEnabled, fileProtEnabled].filter(Boolean).length;
+              const storageEnabled = !!siteSettings?.enable_persistent_storage;
+              const featuresShown = [networkEnabled, fileProtEnabled, storageEnabled].filter(Boolean).length;
               return (
                 <>
                   <div className="grid grid-cols-1 gap-10 lg:grid-cols-3">
@@ -825,7 +827,7 @@ export default function WorkspaceSettingsPage() {
                           </div>
                         </FieldRow>
                       )}
-                      {networkEnabled && fileProtEnabled && <Separator />}
+                      {networkEnabled && (fileProtEnabled || storageEnabled) && <Separator />}
                       {fileProtEnabled && (
                         <FieldRow
                           label="File protection"
@@ -839,6 +841,25 @@ export default function WorkspaceSettingsPage() {
                             <Switch
                               checked={ws.enable_file_protection}
                               onCheckedChange={(v) => update("enable_file_protection", v)}
+                              disabled={!canEdit}
+                            />
+                          </div>
+                        </FieldRow>
+                      )}
+                      {fileProtEnabled && storageEnabled && <Separator />}
+                      {storageEnabled && (
+                        <FieldRow
+                          label="Persistent storage"
+                          description="Mount per-workspace S3 storage at /config/Downloads. Files persist across sessions."
+                        >
+                          <div className="flex items-center gap-2">
+                            <HardDrive className={cn(
+                              "size-4 transition-colors",
+                              ws.enable_persistent_storage ? "text-purple-500" : "text-muted-foreground"
+                            )} />
+                            <Switch
+                              checked={ws.enable_persistent_storage}
+                              onCheckedChange={(v) => update("enable_persistent_storage", v)}
                               disabled={!canEdit}
                             />
                           </div>

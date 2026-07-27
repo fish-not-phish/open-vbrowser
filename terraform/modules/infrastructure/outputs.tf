@@ -55,4 +55,16 @@ output "ovb_user_secret_access_key" {
   value     = aws_iam_access_key.ovb.secret
 }
 
+output "s3files_file_system_arn" {
+  value = aws_s3files_file_system.main.arn
+}
+
+output "s3files_file_system_id" {
+  value = aws_s3files_file_system.main.id
+}
+
+output "s3files_bucket_name" {
+  value = aws_s3_bucket.s3files.id
+}
+
 

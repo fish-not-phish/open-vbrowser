@@ -1,5 +1,6 @@
 from django.contrib import admin
 from .models import Workspace, WorkspaceMembership
+from .services import deprovision_access_point
 
 
 class WorkspaceMembershipInline(admin.TabularInline):
@@ -15,6 +16,13 @@ class WorkspaceAdmin(admin.ModelAdmin):
     ]
     search_fields = ['name', 'slug']
     inlines = [WorkspaceMembershipInline]
+
+    def delete_queryset(self, request, queryset):
+        # Bulk delete via QuerySet.delete() bypasses pre_delete signals, so
+        # deprovision each workspace's S3 Files resources explicitly first.
+        for obj in queryset:
+            deprovision_access_point(obj)
+        super().delete_queryset(request, queryset)
 
 
 @admin.register(WorkspaceMembership)

@@ -67,4 +67,16 @@ output "log_group_names" {
   value = module.ecs_tasks.log_group_names
 }
 
+output "s3files_file_system_arn" {
+  value = module.infrastructure.s3files_file_system_arn
+}
+
+output "s3files_file_system_id" {
+  value = module.infrastructure.s3files_file_system_id
+}
+
+output "s3files_bucket_name" {
+  value = module.infrastructure.s3files_bucket_name
+}
+
 

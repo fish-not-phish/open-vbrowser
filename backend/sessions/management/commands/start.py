@@ -20,6 +20,9 @@ if not DEV_MODE:
     ecs_client = boto3.client('ecs', region_name=_region)
     ec2_client = boto3.client('ec2', region_name=_region)
 
+# ─── S3 Files (persistent storage) ────────────────────────────────────────────
+S3FILES_FILE_SYSTEM_ARN = getattr(settings, 'S3FILES_FILE_SYSTEM_ARN', '')
+
 # ─── OS-based browser slugs ────────────────────────────────────────────────────
 # These receive the "os" resource tier from SiteSettings instead of "browser".
 OS_APP_SLUGS = frozenset({"kali", "ubuntu", "alpine", "code-server", "terminal"})
@@ -41,6 +44,68 @@ def get_latest_task_definition(family: str) -> str:
     if not arns:
         raise RuntimeError(f"No active task definitions found for family '{family}'")
     return arns[0]
+
+
+def _get_or_register_storage_task_def(browser: str, workspace_uuid: str, access_point_arn: str) -> str:
+    """
+    Resolve (or register) a per-workspace task definition that mounts the
+    workspace's S3 Files access point at /config/Downloads.
+
+    Uses a distinct family per (browser, workspace) so the "latest ACTIVE"
+    lookup doesn't collide with another workspace's revision.
+
+    The access point ARN is stable per workspace, so the registered task def
+    is reusable across sessions — we only register a new revision when the
+    family doesn't exist yet.
+    """
+    family = f"ovb-{browser}-ws-{workspace_uuid[:8]}"
+
+    # Try to reuse an existing active task definition for this family
+    try:
+        return get_latest_task_definition(family)
+    except RuntimeError:
+        pass  # Family doesn't exist yet — register one
+
+    # Fetch the base browser task definition to copy its container config
+    base_family = f"ovb-{browser}"
+    base_arn = get_latest_task_definition(base_family)
+    base_resp = ecs_client.describe_task_definition(taskDefinition=base_arn)
+    base_td = base_resp['taskDefinition']
+
+    # Copy container definitions and add the mount point
+    container_defs = base_td['containerDefinitions']
+    for container in container_defs:
+        if container['name'] == browser:
+            mount_points = container.get('mountPoints', [])
+            mount_points.append({
+                'sourceVolume': 'persistent-storage',
+                'containerPath': '/config/Downloads',
+                'readOnly': False,
+            })
+            container['mountPoints'] = mount_points
+
+    # Register the new task definition with the s3files volume
+    volumes = [{
+        'name': 'persistent-storage',
+        's3filesVolumeConfiguration': {
+            'fileSystemArn': S3FILES_FILE_SYSTEM_ARN,
+            'accessPointArn': access_point_arn,
+        },
+    }]
+
+    resp = ecs_client.register_task_definition(
+        family=family,
+        taskRoleArn=base_td.get('taskRoleArn', ''),
+        executionRoleArn=base_td.get('executionRoleArn', ''),
+        networkMode=base_td.get('networkMode', 'awsvpc'),
+        containerDefinitions=container_defs,
+        volumes=volumes,
+        requiresCompatibilities=base_td.get('requiresCompatibilities', ['FARGATE']),
+        cpu=base_td.get('cpu', '512'),
+        memory=base_td.get('memory', '2048'),
+    )
+
+    return resp['taskDefinition']['taskDefinitionArn']
 
 
 def _dev_run_browser_task(container_uuid):
@@ -79,7 +144,7 @@ def _dev_run_browser_task(container_uuid):
 
 def run_browser_task(browser_type, container_uuid, auto_open_url, username, session_type,
                      enable_traffic_log=False, file_protection=False,
-                     idle_timeout_minutes=None):
+                     idle_timeout_minutes=None, persistent_storage=False):
     if DEV_MODE:
         return _dev_run_browser_task(container_uuid)
 
@@ -94,17 +159,35 @@ def run_browser_task(browser_type, container_uuid, auto_open_url, username, sess
 
     # 2) Resolve task definition
     browser = browser_type.lower()
-    family = f"ovb-{browser}"
-    try:
-        task_definition_arn = get_latest_task_definition(family)
-    except Exception:
-        browser = 'chrome'
-        family = 'ovb-chrome'
-        task_definition_arn = get_latest_task_definition(family)
 
     # 3) Container overrides
     from sessions.models import Container as _Container
     _container_obj = _Container.objects.get(uuid=container_uuid)
+
+    # Resolve task definition — use a per-workspace storage task def when
+    # persistent storage is enabled, otherwise the standard browser family.
+    if persistent_storage:
+        if not S3FILES_FILE_SYSTEM_ARN:
+            raise CommandError(
+                "Persistent storage requested but S3FILES_FILE_SYSTEM_ARN is not "
+                "configured. Run terraform apply and restart the backend."
+            )
+        workspace = _container_obj.workspace
+        if not workspace or not workspace.s3files_access_point_arn:
+            raise CommandError(
+                f"Persistent storage requested for workspace "
+                f"{workspace.uuid if workspace else '?'} but no S3 Files access "
+                "point is provisioned. Run: python manage.py backfill_access_points"
+            )
+        task_definition_arn = _get_or_register_storage_task_def(
+            browser, str(workspace.uuid), workspace.s3files_access_point_arn
+        )
+    else:
+        try:
+            task_definition_arn = get_latest_task_definition(f"ovb-{browser}")
+        except Exception:
+            browser = 'chrome'
+            task_definition_arn = get_latest_task_definition('ovb-chrome')
 
     overrides = {
         'containerOverrides': [{
@@ -119,6 +202,7 @@ def run_browser_task(browser_type, container_uuid, auto_open_url, username, sess
                 {'name': 'DEFAULT_IDLE_THRESHOLD',  'value': str(idle_timeout_minutes if idle_timeout_minutes is not None else DEFAULT_IDLE_THRESHOLD)},
                 {'name': 'ENABLE_TRAFFIC_LOG',      'value': 'true' if enable_traffic_log else 'false'},
                 {'name': 'FILE_PROTECTION',         'value': 'true' if file_protection else 'false'},
+                {'name': 'PERSISTENT_STORAGE',      'value': 'true' if persistent_storage else 'false'},
             ]
         }]
     }
@@ -251,6 +335,7 @@ def lambda_handler(event, context):
         enable_traffic_log=params.get('enable_traffic_log', False),
         file_protection=params.get('file_protection', False),
         idle_timeout_minutes=params.get('idle_timeout_minutes'),
+        persistent_storage=params.get('persistent_storage', False),
     )
 
 
@@ -266,6 +351,7 @@ class Command(BaseCommand):
         parser.add_argument('--session_type', default='vstandard')
         parser.add_argument('--enable_traffic_log', default=False, type=lambda x: x in (True, 'True', 'true', '1'))
         parser.add_argument('--file_protection', default=False, type=lambda x: x in (True, 'True', 'true', '1'))
+        parser.add_argument('--persistent_storage', default=False, type=lambda x: x in (True, 'True', 'true', '1'))
         parser.add_argument('--idle_timeout_minutes', default=None, type=int)
 
     def handle(self, *args, **options):

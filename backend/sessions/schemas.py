@@ -13,6 +13,7 @@ class SessionCreateIn(Schema):
     workspace_uuid: Optional[UUID] = None
     enable_traffic_log: bool = False   # mitmproxy network logging
     file_protection: bool = False      # 7z-encrypt downloaded files
+    persistent_storage: bool = False   # mount S3 Files at /config/Downloads
 
 
 class SessionStatusOut(Schema):
@@ -41,6 +42,7 @@ class SessionDetailOut(Schema):
     case_id: Optional[int] = None
     tags: list[str] = []
     enable_traffic_log: bool = False
+    persistent_storage: bool = False
 
 
 class SessionCallbackIn(Schema):

@@ -61,6 +61,7 @@ def _session_to_detail(container: Container) -> dict:
         "case_id": case_id,
         "tags": tags,
         "enable_traffic_log": container.enable_traffic_log,
+        "persistent_storage": container.persistent_storage,
     }
 
 
@@ -240,12 +241,17 @@ def create_session(request: HttpRequest, payload: SessionCreateIn):
     _network_logging_permitted = _global_network_logging and _ws_network_logging
     _file_protection_permitted = _global_file_protection and _ws_file_protection
 
+    _global_persistent_storage = _site.enable_persistent_storage
+    _ws_persistent_storage = workspace.enable_persistent_storage if workspace else False
+    _persistent_storage_permitted = _global_persistent_storage and _ws_persistent_storage
+
     enable_traffic_log = (
         payload.enable_traffic_log
         and _network_logging_permitted
         and payload.browser_type not in TRAFFIC_LOG_UNSUPPORTED
     )
     enable_file_protection = payload.file_protection and _file_protection_permitted
+    enable_persistent_storage = payload.persistent_storage and _persistent_storage_permitted
 
     container = Container.objects.create(
         user=user,
@@ -255,6 +261,7 @@ def create_session(request: HttpRequest, payload: SessionCreateIn):
         category='vspot' if payload.session_type == 'vspot' else 'standard',
         enable_traffic_log=enable_traffic_log,
         file_protection=enable_file_protection,
+        persistent_storage=enable_persistent_storage,
     )
 
     # Resolve the idle timeout for this session now (same logic as close_containers)
@@ -272,6 +279,7 @@ def create_session(request: HttpRequest, payload: SessionCreateIn):
         enable_traffic_log,
         enable_file_protection,
         _idle_timeout_minutes,
+        enable_persistent_storage,
     )
 
     return 201, _session_to_detail(container)

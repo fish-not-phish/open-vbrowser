@@ -37,6 +37,7 @@ export interface SessionDetail {
   case_id: number | null;
   tags: string[];
   enable_traffic_log: boolean;
+  persistent_storage: boolean;
 }
 
 export interface SessionStatus {
@@ -66,6 +67,7 @@ export interface SessionHistory {
   case_name: string | null;
   case_uuid: string | null;
   enable_traffic_log: boolean;
+  persistent_storage: boolean;
   traffic_event_count: number;
 }
 
@@ -154,6 +156,7 @@ export interface Workspace {
   logo_url: string | null;
   enable_network_logging: boolean;
   enable_file_protection: boolean;
+  enable_persistent_storage: boolean;
 }
 
 export interface DashboardActiveSession {
@@ -304,6 +307,7 @@ export const sessionsApi = {
     workspace_uuid?: string;
     enable_traffic_log?: boolean;
     file_protection?: boolean;
+    persistent_storage?: boolean;
   }, csrfToken: string) =>
     apiFetch<SessionDetail>('/v1/sessions/', {
       method: 'POST', body: JSON.stringify(payload), csrfToken,
@@ -444,7 +448,7 @@ export const workspacesApi = {
     apiFetch<Workspace>('/v1/workspaces/', { method: 'POST', body: JSON.stringify(payload), csrfToken }),
   getBySlug: (slug: string) => apiFetch<Workspace>(`/v1/workspaces/by-slug/${slug}/`),
   get: (uuid: string) => apiFetch<Workspace>(`/v1/workspaces/${uuid}/`),
-  update: (uuid: string, payload: Partial<Pick<Workspace, 'name' | 'max_concurrent_sessions_per_member' | 'idle_timeout_minutes' | 'max_session_duration_hours' | 'enable_network_logging' | 'enable_file_protection'>>, csrfToken: string) =>
+  update: (uuid: string, payload: Partial<Pick<Workspace, 'name' | 'max_concurrent_sessions_per_member' | 'idle_timeout_minutes' | 'max_session_duration_hours' | 'enable_network_logging' | 'enable_file_protection' | 'enable_persistent_storage'>>, csrfToken: string) =>
     apiFetch<Workspace>(`/v1/workspaces/${uuid}/`, { method: 'PATCH', body: JSON.stringify(payload), csrfToken }),
   delete: (uuid: string, csrfToken: string) =>
     apiFetch<{ status: string }>(`/v1/workspaces/${uuid}/`, { method: 'DELETE', csrfToken }),
@@ -508,6 +512,8 @@ export interface SiteSettings {
   enable_network_logging: boolean;
   /** When true, workspace admins may enable file protection for their workspace. */
   enable_file_protection: boolean;
+  /** When true, workspace admins may enable persistent S3 storage for their workspace. */
+  enable_persistent_storage: boolean;
   /** vCPU for standard browser sessions (Chrome, Firefox, etc.) */
   browser_vcpu: number;
   /** RAM in GB for standard browser sessions */

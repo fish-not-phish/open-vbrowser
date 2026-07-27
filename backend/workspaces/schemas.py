@@ -17,6 +17,7 @@ class WorkspaceUpdateIn(Schema):
     # Per-workspace feature flags (only effective when globally enabled)
     enable_network_logging: Optional[bool] = None
     enable_file_protection: Optional[bool] = None
+    enable_persistent_storage: Optional[bool] = None
 
 
 class MemberOut(Schema):
@@ -44,6 +45,7 @@ class WorkspaceOut(Schema):
     # Per-workspace feature flags
     enable_network_logging: bool = False
     enable_file_protection: bool = False
+    enable_persistent_storage: bool = False
 
 
 class MemberInviteIn(Schema):

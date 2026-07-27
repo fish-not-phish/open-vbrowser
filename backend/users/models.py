@@ -78,6 +78,12 @@ class SiteSettings(models.Model):
         default=False,
         help_text="When enabled, workspace admins may allow members to use file protection."
     )
+    # Whether persistent S3 storage is available anywhere on this instance.
+    # When False, the feature is completely disabled regardless of workspace settings.
+    enable_persistent_storage = models.BooleanField(
+        default=False,
+        help_text="When enabled, workspace admins may allow members to use persistent S3 storage."
+    )
     # ── ECS task resource provisioning ────────────────────────────────────────
     # vCPU and memory for standard browser sessions (Chrome, Firefox, etc.)
     # Allowed combos: 0.5/1..4 GB, 1/2..8 GB, 2/4..16 GB, 4/8..30 GB

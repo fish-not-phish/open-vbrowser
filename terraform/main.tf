@@ -103,5 +103,8 @@ SECURITY_GROUP_ID=${module.infrastructure.security_group_id}
 SUBNET_ID=${module.infrastructure.public_subnet_ids[0]}
 AWS_ACCESS_KEY_ID=${module.infrastructure.ovb_user_access_key_id}
 AWS_SECRET_ACCESS_KEY=${module.infrastructure.ovb_user_secret_access_key}
+S3FILES_FILE_SYSTEM_ARN=${module.infrastructure.s3files_file_system_arn}
+S3FILES_FILE_SYSTEM_ID=${module.infrastructure.s3files_file_system_id}
+S3FILES_BUCKET_NAME=${module.infrastructure.s3files_bucket_name}
 EOF
 }

@@ -54,6 +54,7 @@ class SiteSettingsOut(Schema):
     # Feature flags
     enable_network_logging: bool = False
     enable_file_protection: bool = False
+    enable_persistent_storage: bool = False
     # Resource provisioning
     browser_vcpu: float = 0.5
     browser_memory_gb: float = 2.0
@@ -79,6 +80,7 @@ class SiteSettingsIn(Schema):
     # Feature flags
     enable_network_logging: Optional[bool] = None
     enable_file_protection: Optional[bool] = None
+    enable_persistent_storage: Optional[bool] = None
     # Resource provisioning
     browser_vcpu: Optional[float] = None
     browser_memory_gb: Optional[float] = None

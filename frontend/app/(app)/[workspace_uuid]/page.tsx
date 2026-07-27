@@ -12,7 +12,7 @@ import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "sonner";
 import Image from "next/image";
-import { Globe, ShieldCheck, MessageSquare, Network, LayoutGrid, Loader2, Search, Zap, X, TriangleAlert, Activity, Lock, Info, Terminal, Wrench } from "lucide-react";
+import { Globe, ShieldCheck, MessageSquare, Network, LayoutGrid, Loader2, Search, Zap, X, TriangleAlert, Activity, Lock, Info, Terminal, Wrench, HardDrive } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { motion, AnimatePresence } from "motion/react";
 
@@ -174,6 +174,7 @@ export default function HomePage() {
   const [useSpot, setUseSpot] = React.useState(false);
   const [networkLogging, setNetworkLogging] = React.useState(false);
   const [fileProtection, setFileProtection] = React.useState(false);
+  const [persistentStorage, setPersistentStorage] = React.useState(false);
   const [openUrl, setOpenUrl] = React.useState("");
   const [search, setSearch] = React.useState("");
   const [selectedCategory, setSelectedCategory] = React.useState<string>("all");
@@ -195,6 +196,7 @@ export default function HomePage() {
     // only if the specific feature flag is off.
     if (activeWorkspace?.is_personal || !activeWorkspace?.enable_network_logging) setNetworkLogging(false);
     if (activeWorkspace?.is_personal || !activeWorkspace?.enable_file_protection) setFileProtection(false);
+    if (activeWorkspace?.is_personal || !activeWorkspace?.enable_persistent_storage) setPersistentStorage(false);
   }, [activeWorkspace, allBrowsers]);
 
   async function loadData() {
@@ -225,6 +227,7 @@ export default function HomePage() {
             workspace_uuid: activeWorkspace?.uuid,
             enable_traffic_log: networkLogging && !TRAFFIC_LOG_UNSUPPORTED.has(browser.slug),
             file_protection: fileProtection,
+            persistent_storage: persistentStorage,
           },
           user.csrfToken
         );
@@ -322,7 +325,7 @@ export default function HomePage() {
         </div>
 
         {/* Network logging, file protection, and persistent storage toggles — only shown for team workspaces with the feature enabled */}
-        {!activeWorkspace?.is_personal && (activeWorkspace?.enable_network_logging || activeWorkspace?.enable_file_protection) && (
+        {!activeWorkspace?.is_personal && (activeWorkspace?.enable_network_logging || activeWorkspace?.enable_file_protection || activeWorkspace?.enable_persistent_storage) && (
           <>
             {/* Divider */}
             <div className="h-5 w-px bg-border shrink-0" />
@@ -357,6 +360,24 @@ export default function HomePage() {
                 >
                   <Lock className={cn("size-3.5 transition-colors", fileProtection ? "text-green-500" : "text-muted-foreground")} />
                   File protection
+                </Label>
+              </div>
+            )}
+
+            {activeWorkspace?.enable_persistent_storage && (
+              <div className="flex items-center gap-2.5 shrink-0">
+                <Switch
+                  id="persistent-storage-toggle"
+                  checked={persistentStorage}
+                  onCheckedChange={setPersistentStorage}
+                />
+                <Label
+                  htmlFor="persistent-storage-toggle"
+                  className="cursor-pointer flex items-center gap-1.5 text-sm select-none"
+                  title="Mounts per-workspace S3 storage at /config/Downloads. Files persist across sessions."
+                >
+                  <HardDrive className={cn("size-3.5 transition-colors", persistentStorage ? "text-purple-500" : "text-muted-foreground")} />
+                  Persistent storage
                 </Label>
               </div>
             )}
