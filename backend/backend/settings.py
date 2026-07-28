@@ -93,6 +93,7 @@ INSTALLED_APPS = [
     "workspaces",
     "cases",
     "notifications",
+    "files",
 ]
 
 MIDDLEWARE = [

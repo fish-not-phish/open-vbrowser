@@ -27,6 +27,7 @@ import {
   MonitorIcon,
   HistoryIcon,
   FolderOpenIcon,
+  HardDriveIcon,
   ChevronRightIcon,
   SettingsIcon,
   UsersIcon,
@@ -205,6 +206,16 @@ function WorkspaceSection() {
                   isActive={activeWorkspace ? pathname.startsWith(`/${activeWorkspace.uuid}/cases`) : false}>
                   <a href={activeWorkspace ? `/${activeWorkspace.uuid}/cases` : '#'}>
                     <FolderOpenIcon /><span>Cases</span>
+                  </a>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+            )}
+            {activeWorkspace?.enable_persistent_storage && (
+              <SidebarMenuItem>
+                <SidebarMenuButton tooltip="Files" asChild
+                  isActive={activeWorkspace ? pathname.startsWith(`/${activeWorkspace.uuid}/files`) : false}>
+                  <a href={activeWorkspace ? `/${activeWorkspace.uuid}/files` : '#'}>
+                    <HardDriveIcon /><span>Files</span>
                   </a>
                 </SidebarMenuButton>
               </SidebarMenuItem>

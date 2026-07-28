@@ -492,6 +492,64 @@ export const workspacesApi = {
     apiFetch<WorkspaceDashboard>(`/v1/workspaces/${uuid}/dashboard/`),
 };
 
+// ─── Files (workspace persistent storage) ─────────────────────────────────────
+
+export interface FileEntry {
+  name: string;
+  is_dir: boolean;
+  size: number;
+  last_modified: string | null;
+  sha256: string | null;
+}
+
+export interface FileList {
+  path: string;
+  entries: FileEntry[];
+}
+
+export const filesApi = {
+  list: (wsUuid: string, path?: string) =>
+    apiFetch<FileList>(`/v1/files/${wsUuid}/${path ? `?path=${encodeURIComponent(path)}` : ''}`),
+
+  download: (wsUuid: string, path: string) => {
+    const API_BASE_URL = process.env.NEXT_PUBLIC_BASE_URL ?? 'http://127.0.0.1:8000/api/';
+    return fetch(`${API_BASE_URL.replace(/\/$/, '')}/v1/files/${wsUuid}/download/?path=${encodeURIComponent(path)}`, {
+      credentials: 'include',
+    });
+  },
+
+  downloadProtected: (wsUuid: string, path: string) => {
+    const API_BASE_URL = process.env.NEXT_PUBLIC_BASE_URL ?? 'http://127.0.0.1:8000/api/';
+    return fetch(`${API_BASE_URL.replace(/\/$/, '')}/v1/files/${wsUuid}/download-protected/?path=${encodeURIComponent(path)}`, {
+      credentials: 'include',
+    });
+  },
+
+  computeHash: (wsUuid: string, path: string) =>
+    apiFetch<{ path: string; sha256: string }>(`/v1/files/${wsUuid}/hash/?path=${encodeURIComponent(path)}`),
+
+  upload: async (wsUuid: string, file: File, path: string, csrfToken: string): Promise<{ status: string; path: string }> => {
+    const API_BASE_URL = process.env.NEXT_PUBLIC_BASE_URL ?? 'http://127.0.0.1:8000/api/';
+    const form = new FormData();
+    form.append('file', file);
+    const qs = path ? `?path=${encodeURIComponent(path)}` : '';
+    const res = await fetch(`${API_BASE_URL.replace(/\/$/, '')}/v1/files/${wsUuid}/upload/${qs}`, {
+      method: 'POST',
+      credentials: 'include',
+      headers: { 'X-CSRFToken': csrfToken },
+      body: form,
+    });
+    if (!res.ok) throw new Error(await res.text());
+    return res.json();
+  },
+
+  delete: (wsUuid: string, path: string, csrfToken: string) =>
+    apiFetch<{ status: string; path: string }>(`/v1/files/${wsUuid}/?path=${encodeURIComponent(path)}`, { method: 'DELETE', csrfToken }),
+
+  mkdir: (wsUuid: string, path: string, csrfToken: string) =>
+    apiFetch<{ status: string; path: string }>(`/v1/files/${wsUuid}/mkdir/`, { method: 'POST', body: JSON.stringify({ path }), csrfToken }),
+};
+
 // ─── Account ──────────────────────────────────────────────────────────────────
 
 export interface SiteSettings {
