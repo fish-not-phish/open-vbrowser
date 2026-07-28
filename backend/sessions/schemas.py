@@ -43,6 +43,8 @@ class SessionDetailOut(Schema):
     tags: list[str] = []
     enable_traffic_log: bool = False
     persistent_storage: bool = False
+    expires_at: Optional[datetime] = None
+    idle_timeout_minutes: Optional[int] = None
 
 
 class SessionCallbackIn(Schema):

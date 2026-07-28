@@ -7,6 +7,7 @@ from django.utils import timezone
 from django.db.models import Prefetch
 
 from sessions.models import Container, OpenContainers
+from sessions.services import get_idle_threshold, get_max_duration
 
 DEV_MODE = getattr(settings, 'DEV_MODE', False)
 
@@ -18,63 +19,6 @@ CLUSTER_NAME = 'ovb-browsers'
 # is hard-deleted. Gives delete_container enough time to run ECS stop + DNS
 # cleanup before the row disappears from under it. (#4)
 STALE_CLOSED_GRACE_MINUTES = 10
-
-
-def get_idle_threshold(container, site_settings):
-    """
-    Resolve the idle timeout for a container.
-    Resolution order: UserLimit (most specific) → Workspace → SiteSettings default.
-
-    site_settings is passed in so callers can resolve it once and reuse it
-    across many containers rather than hitting the DB per container. (#2)
-    """
-    from users.models import UserLimit
-
-    # 1. Per-user limit
-    if container.user:
-        try:
-            ul = container.user.limits
-            if ul.idle_timeout_minutes is not None:
-                return ul.idle_timeout_minutes
-        except UserLimit.DoesNotExist:
-            pass
-
-    # 2. Workspace limit
-    if container.workspace and container.workspace.idle_timeout_minutes is not None:
-        return container.workspace.idle_timeout_minutes
-
-    # 3. Site default (pre-fetched by caller)
-    if site_settings is not None:
-        return site_settings.default_idle_timeout_minutes
-
-    # 4. Env var fallback
-    return int(getattr(settings, 'DEFAULT_IDLE_THRESHOLD', 10))
-
-
-def get_max_duration(container, site_settings):
-    """
-    Resolve the hard session duration cap (in hours).
-    Returns None if no cap is set.
-    Resolution order: UserLimit → SiteSettings default.
-
-    site_settings is passed in so callers can resolve it once and reuse it
-    across many containers rather than hitting the DB per container. (#2)
-    """
-    from users.models import UserLimit
-
-    if container.user:
-        try:
-            ul = container.user.limits
-            if ul.max_session_duration_hours is not None:
-                return ul.max_session_duration_hours
-        except UserLimit.DoesNotExist:
-            pass
-
-    # Site default (pre-fetched by caller)
-    if site_settings is not None:
-        return site_settings.default_max_session_duration_hours
-
-    return None
 
 
 def _close_container(container, oc, now, reason, stdout):

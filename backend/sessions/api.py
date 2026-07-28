@@ -1,6 +1,6 @@
 import hashlib
 import secrets
-from datetime import datetime
+from datetime import datetime, timedelta
 from decimal import Decimal
 from typing import Optional
 
@@ -15,6 +15,7 @@ from ninja.errors import HttpError
 from users.auth import session_mfa_auth
 from users.models import SiteSettings, UserLimit
 from .models import Container, OpenContainers, TrafficEvent
+from .services import get_idle_threshold, get_max_duration
 from .schemas import (
     SessionCreateIn, SessionStatusOut, SessionDetailOut, SessionCallbackIn,
     SessionHistoryOut, NoteCreateIn, NoteOut, TagAssignIn, CaseAssignIn,
@@ -42,6 +43,17 @@ def _session_to_detail(container: Container) -> dict:
     workspace_uuid = container.workspace.uuid if container.workspace else None
     tags = list(container.tags.values_list('name', flat=True))
     case_id = container.case_id
+
+    # Resolve the same limits the close_containers enforcer uses, so the client
+    # countdown always agrees with server-side termination. expires_at is the
+    # hard-cap wall-clock cutoff (None = no cap / unlimited).
+    site = SiteSettings.get()
+    max_hours = get_max_duration(container, site)
+    expires_at = None
+    if max_hours and container.start_time:
+        expires_at = container.start_time + timedelta(hours=max_hours)
+    idle_timeout_minutes = get_idle_threshold(container, site)
+
     return {
         "uuid": container.uuid,
         "type": container.type,
@@ -62,6 +74,8 @@ def _session_to_detail(container: Container) -> dict:
         "tags": tags,
         "enable_traffic_log": container.enable_traffic_log,
         "persistent_storage": container.persistent_storage,
+        "expires_at": expires_at,
+        "idle_timeout_minutes": idle_timeout_minutes,
     }
 
 

@@ -19,7 +19,7 @@ import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 import { AnimatePresence, motion } from "motion/react";
 import {
-  Activity, ChevronDown, ChevronUp, Flag, X,
+  Activity, ChevronDown, ChevronLeft, ChevronRight, ChevronUp, Flag, X,
 } from "lucide-react";
 
 // ─── Constants ────────────────────────────────────────────────────────────────
@@ -69,9 +69,11 @@ export default function SessionPage() {
   const [noteBody, setNoteBody]       = React.useState("");
   const [closing, setClosing]         = React.useState(false);
   const [elapsed, setElapsed]         = React.useState(0);
+  const [remaining, setRemaining]     = React.useState<number | null>(null);
   const [sidebarOpen, setSidebarOpen] = React.useState(false);
 
   const startedAt = React.useRef<Date | null>(null);
+  const expiresAt = React.useRef<Date | null>(null);
 
   // ── Traffic drawer state ──────────────────────────────────────────────────
   const [drawerOpen, setDrawerOpen]         = React.useState(false);
@@ -108,6 +110,7 @@ export default function SessionPage() {
       setSession(s);
       setHasTrafficLog(!!s.enable_traffic_log);
       if (s.start_time) startedAt.current = new Date(s.start_time);
+      expiresAt.current = s.expires_at ? new Date(s.expires_at) : null;
 
       const [n, t, c] = await Promise.all([
         sessionsApi.getNotes(uuid),
@@ -177,6 +180,7 @@ export default function SessionPage() {
   React.useEffect(() => {
     const id = setInterval(() => {
       if (startedAt.current) setElapsed(Date.now() - startedAt.current.getTime());
+      if (expiresAt.current) setRemaining(expiresAt.current.getTime() - Date.now());
     }, 1000);
     return () => clearInterval(id);
   }, []);
@@ -292,6 +296,15 @@ export default function SessionPage() {
     return h > 0 ? `${h}h ${m}m ${sec}s` : `${m}m ${sec}s`;
   };
 
+  const formatRemaining = (ms: number) => {
+    if (ms <= 0) return "0s";
+    const s = Math.floor(ms / 1000);
+    const h = Math.floor(s / 3600);
+    const m = Math.floor((s % 3600) / 60);
+    const sec = s % 60;
+    return h > 0 ? `${h}h ${m}m` : `${m}m ${sec}s`;
+  };
+
   // ─────────────────────────────────────────────────────────────────────────
   // Render
   // ─────────────────────────────────────────────────────────────────────────
@@ -303,8 +316,6 @@ export default function SessionPage() {
       </div>
     );
   }
-
-  const drawerHeight = drawerOpen ? 280 : 0;
 
   return (
     <div className="flex flex-col h-screen bg-background overflow-hidden">
@@ -330,25 +341,58 @@ export default function SessionPage() {
           )}
         </div>
 
-        {/* Sidebar toggle */}
-        <Button
-          variant="outline"
-          size="sm"
-          className="absolute top-4 right-4 z-10"
-          onClick={() => setSidebarOpen((o) => !o)}
+        {/* Session panel — right-edge notch + slide-in drawer.
+            No overlay: the browser iframe stays fully visible and interactive
+            while the drawer is open. pointer-events-none on the wrapper lets
+            clicks pass through to the iframe everywhere except the notch/panel. */}
+        <motion.div
+          className="absolute top-0 right-0 h-full z-30 flex pointer-events-none"
+          animate={{ x: sidebarOpen ? 0 : 320 }}
+          transition={{ type: "spring", stiffness: 340, damping: 30 }}
         >
-          {sidebarOpen ? "Hide" : "Menu"}
-        </Button>
+          {/* Notch / handle (always visible, toggles the panel) */}
+          <button
+            type="button"
+            onClick={() => setSidebarOpen((o) => !o)}
+            aria-label={sidebarOpen ? "Close session panel" : "Open session panel"}
+            className="pointer-events-auto w-8 self-center h-16 flex items-center justify-center bg-background border border-r-0 rounded-l-md shadow-md hover:bg-muted/50 transition-colors cursor-pointer"
+          >
+            {sidebarOpen
+              ? <ChevronRight className="size-4" />
+              : <ChevronLeft className="size-4" />}
+          </button>
 
-        {/* Sidebar */}
-        {sidebarOpen && (
-          <div className="w-80 border-l flex flex-col bg-background overflow-hidden">
+          {/* Panel body */}
+          <div className="pointer-events-auto w-80 h-full bg-background border-l flex flex-col overflow-hidden shadow-xl">
             <div className="p-4 border-b">
-              <p className="text-sm font-medium capitalize">{session.type}</p>
-              <p className="text-xs text-muted-foreground">
+              <div className="flex items-center justify-between">
+                <p className="text-sm font-medium capitalize">{session.type}</p>
+                <button
+                  type="button"
+                  onClick={() => setSidebarOpen(false)}
+                  aria-label="Close panel"
+                  className="text-muted-foreground hover:text-foreground transition-colors"
+                >
+                  <X className="size-4" />
+                </button>
+              </div>
+              <p className="text-xs text-muted-foreground mt-1">
                 {session.capacity_provider === "FARGATE_SPOT" ? "Spot" : "Standard"} •{" "}
                 {formatElapsed(elapsed)}
               </p>
+              {remaining !== null && (
+                <p className={cn(
+                  "text-xs font-medium",
+                  remaining < 5 * 60 * 1000 ? "text-destructive" : "text-muted-foreground"
+                )}>
+                  Ends in {formatRemaining(remaining)}
+                </p>
+              )}
+              {session.idle_timeout_minutes != null && (
+                <p className="text-xs text-muted-foreground">
+                  Idle timeout: {session.idle_timeout_minutes}m
+                </p>
+              )}
             </div>
 
             <ScrollArea className="flex-1 p-4">
@@ -385,122 +429,122 @@ export default function SessionPage() {
               </div>
             </ScrollArea>
           </div>
-        )}
+        </motion.div>
       </div>
 
-      {/* ── Network log bottom drawer ────────────────────────────────────── */}
+      {/* ── Network log bottom drawer — notch + slide-up panel ──────────── */}
       {hasTrafficLog && (
-        <div className="flex-none border-t bg-background">
-
-          {/* Drawer handle / toggle bar */}
+        <motion.div
+          className="absolute bottom-0 left-0 right-0 z-30 flex flex-col items-center pointer-events-none"
+          animate={{ y: drawerOpen ? 0 : 280 }}
+          transition={{ type: "spring", stiffness: 340, damping: 30 }}
+        >
+          {/* Notch / handle — centered at bottom edge when closed, top of panel when open */}
           <button
+            type="button"
             onClick={() => drawerOpen ? setDrawerOpen(false) : openDrawer()}
-            className="w-full flex items-center justify-between px-4 py-2 hover:bg-muted/40 transition-colors"
+            aria-label={drawerOpen ? "Close network logs" : "Open network logs"}
+            className="pointer-events-auto h-8 px-3 flex items-center justify-center gap-1.5 bg-background border border-b-0 rounded-t-md shadow-md hover:bg-muted/50 transition-colors cursor-pointer"
           >
-            <div className="flex items-center gap-2">
-              <Activity className="size-3.5 text-blue-500" />
-              <span className="text-xs font-medium">Network Logs</span>
-              {/* Unread badge when closed */}
-              <AnimatePresence>
-                {!drawerOpen && newEventCount > 0 && (
-                  <motion.span
-                    initial={{ scale: 0.6, opacity: 0 }}
-                    animate={{ scale: 1, opacity: 1 }}
-                    exit={{ scale: 0.6, opacity: 0 }}
-                    className="inline-flex items-center rounded-full bg-blue-500 px-1.5 py-0.5 text-[10px] font-semibold text-white tabular-nums"
-                  >
-                    +{newEventCount > 999 ? "999" : newEventCount}
-                  </motion.span>
-                )}
-              </AnimatePresence>
-              {drawerOpen && (
+            <Activity className="size-3.5 text-blue-500" />
+            <AnimatePresence>
+              {!drawerOpen && newEventCount > 0 && (
+                <motion.span
+                  initial={{ scale: 0.6, opacity: 0 }}
+                  animate={{ scale: 1, opacity: 1 }}
+                  exit={{ scale: 0.6, opacity: 0 }}
+                  className="inline-flex items-center rounded-full bg-blue-500 px-1.5 py-0.5 text-[10px] font-semibold text-white tabular-nums"
+                >
+                  +{newEventCount > 999 ? "999" : newEventCount}
+                </motion.span>
+              )}
+            </AnimatePresence>
+            {drawerOpen
+              ? <ChevronDown className="size-3.5 text-muted-foreground" />
+              : <ChevronUp className="size-3.5 text-muted-foreground" />}
+          </button>
+
+          {/* Panel body */}
+          <div className="pointer-events-auto w-full h-[280px] bg-background border-t flex flex-col overflow-hidden shadow-xl">
+            <div className="flex items-center justify-between px-4 py-1.5 border-b">
+              <div className="flex items-center gap-2">
+                <span className="text-xs font-medium">Network Logs</span>
                 <span className="text-[10px] text-muted-foreground tabular-nums">
                   {trafficEvents.length} events
                   {trafficEvents.length >= MAX_LIVE_EVENTS && " (last 200)"}
                 </span>
-              )}
-            </div>
-            {drawerOpen
-              ? <ChevronDown className="size-3.5 text-muted-foreground" />
-              : <ChevronUp className="size-3.5 text-muted-foreground" />
-            }
-          </button>
-
-          {/* Drawer body */}
-          <AnimatePresence initial={false}>
-            {drawerOpen && (
-              <motion.div
-                key="drawer"
-                initial={{ height: 0 }}
-                animate={{ height: drawerHeight }}
-                exit={{ height: 0 }}
-                transition={{ type: "spring", stiffness: 340, damping: 30 }}
-                className="overflow-hidden"
+              </div>
+              <button
+                type="button"
+                onClick={() => setDrawerOpen(false)}
+                aria-label="Close network logs"
+                className="text-muted-foreground hover:text-foreground transition-colors"
               >
-                <div className="h-full overflow-y-auto font-mono text-xs">
-                  {trafficEvents.length === 0 ? (
-                    <div className="flex flex-col items-center justify-center h-full gap-2 text-muted-foreground">
-                      <Activity className="size-4 opacity-40" />
-                      <span>Waiting for network events…</span>
-                    </div>
-                  ) : (
-                    <table className="w-full">
-                      <thead className="sticky top-0 bg-muted/80 backdrop-blur-sm z-10">
-                        <tr>
-                          <th className="text-left px-3 py-1.5 text-[10px] font-semibold text-muted-foreground w-[110px]">Time</th>
-                          <th className="text-left px-2 py-1.5 text-[10px] font-semibold text-muted-foreground w-[68px]">Method</th>
-                          <th className="text-left px-2 py-1.5 text-[10px] font-semibold text-muted-foreground w-[220px]">Host</th>
-                          <th className="text-left px-2 py-1.5 text-[10px] font-semibold text-muted-foreground">URL</th>
-                          <th className="px-2 py-1.5 w-8" />
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {trafficEvents.map((e) => (
-                          <tr
-                            key={e.id}
+                <X className="size-3.5" />
+              </button>
+            </div>
+            <div className="flex-1 overflow-y-auto font-mono text-xs">
+              {trafficEvents.length === 0 ? (
+                <div className="flex flex-col items-center justify-center h-full gap-2 text-muted-foreground">
+                  <Activity className="size-4 opacity-40" />
+                  <span>Waiting for network events…</span>
+                </div>
+              ) : (
+                <table className="w-full">
+                  <thead className="sticky top-0 bg-muted/80 backdrop-blur-sm z-10">
+                    <tr>
+                      <th className="text-left px-3 py-1.5 text-[10px] font-semibold text-muted-foreground w-[110px]">Time</th>
+                      <th className="text-left px-2 py-1.5 text-[10px] font-semibold text-muted-foreground w-[68px]">Method</th>
+                      <th className="text-left px-2 py-1.5 text-[10px] font-semibold text-muted-foreground w-[220px]">Host</th>
+                      <th className="text-left px-2 py-1.5 text-[10px] font-semibold text-muted-foreground">URL</th>
+                      <th className="px-2 py-1.5 w-8" />
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {trafficEvents.map((e) => (
+                      <tr
+                        key={e.id}
+                        className={cn(
+                          "border-b border-border/50 hover:bg-muted/30 transition-colors",
+                          e.flagged && "bg-amber-50/60 dark:bg-amber-950/20"
+                        )}
+                      >
+                        <td className="px-3 py-1 text-muted-foreground whitespace-nowrap tabular-nums">
+                          {new Date(e.timestamp).toLocaleTimeString([], { hour12: false, hour: "2-digit", minute: "2-digit", second: "2-digit" })}
+                        </td>
+                        <td className="px-2 py-1">
+                          <MethodBadge method={e.method} />
+                        </td>
+                        <td className="px-2 py-1 truncate max-w-[220px] text-foreground" title={e.host}>
+                          {e.host}
+                        </td>
+                        <td className="px-2 py-1 text-muted-foreground truncate max-w-xs" title={e.url}>
+                          {e.url}
+                        </td>
+                        <td className="px-2 py-1 text-right">
+                          <button
+                            onClick={() => toggleFlag(e)}
+                            title={e.flagged ? "Remove flag" : "Flag for review"}
                             className={cn(
-                              "border-b border-border/50 hover:bg-muted/30 transition-colors",
-                              e.flagged && "bg-amber-50/60 dark:bg-amber-950/20"
+                              "rounded p-0.5 transition-colors",
+                              e.flagged
+                                ? "text-amber-500 hover:text-amber-600"
+                                : "text-muted-foreground/30 hover:text-amber-400"
                             )}
                           >
-                            <td className="px-3 py-1 text-muted-foreground whitespace-nowrap tabular-nums">
-                              {new Date(e.timestamp).toLocaleTimeString([], { hour12: false, hour: "2-digit", minute: "2-digit", second: "2-digit" })}
-                            </td>
-                            <td className="px-2 py-1">
-                              <MethodBadge method={e.method} />
-                            </td>
-                            <td className="px-2 py-1 truncate max-w-[220px] text-foreground" title={e.host}>
-                              {e.host}
-                            </td>
-                            <td className="px-2 py-1 text-muted-foreground truncate max-w-xs" title={e.url}>
-                              {e.url}
-                            </td>
-                            <td className="px-2 py-1 text-right">
-                              <button
-                                onClick={() => toggleFlag(e)}
-                                title={e.flagged ? "Remove flag" : "Flag for review"}
-                                className={cn(
-                                  "rounded p-0.5 transition-colors",
-                                  e.flagged
-                                    ? "text-amber-500 hover:text-amber-600"
-                                    : "text-muted-foreground/30 hover:text-amber-400"
-                                )}
-                              >
-                                <Flag className="size-3" />
-                              </button>
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  )}
-                  {/* Auto-scroll anchor */}
-                  <div ref={listEndRef} />
-                </div>
-              </motion.div>
-            )}
-          </AnimatePresence>
-        </div>
+                            <Flag className="size-3" />
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              )}
+              {/* Auto-scroll anchor */}
+              <div ref={listEndRef} />
+            </div>
+          </div>
+        </motion.div>
       )}
     </div>
   );

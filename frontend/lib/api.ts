@@ -38,6 +38,8 @@ export interface SessionDetail {
   tags: string[];
   enable_traffic_log: boolean;
   persistent_storage: boolean;
+  expires_at: string | null;
+  idle_timeout_minutes: number | null;
 }
 
 export interface SessionStatus {

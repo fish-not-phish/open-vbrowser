@@ -61,3 +61,73 @@ def compute_session_cost(container) -> Decimal:
     total = compute_cost + ipv4_cost
 
     return total.quantize(Decimal('0.000001'))
+
+
+# ─── Limit resolvers ──────────────────────────────────────────────────────────
+# Single source of truth for the idle-timeout and hard-duration-cap resolution
+# used by both the close_containers enforcement loop and the session-detail API
+# (so the client countdown always agrees with server-side enforcement).
+
+def get_idle_threshold(container, site_settings):
+    """
+    Resolve the idle timeout (minutes) for a container.
+    Resolution order: UserLimit (most specific) → Workspace → SiteSettings
+    default → DEFAULT_IDLE_THRESHOLD setting.
+
+    ``site_settings`` is passed in so batch callers (e.g. close_containers) can
+    resolve it once and reuse it across many containers rather than hitting the
+    DB per container.
+    """
+    from users.models import UserLimit
+
+    # 1. Per-user limit
+    if container.user:
+        try:
+            ul = container.user.limits
+            if ul.idle_timeout_minutes is not None:
+                return ul.idle_timeout_minutes
+        except UserLimit.DoesNotExist:
+            pass
+
+    # 2. Workspace limit
+    if container.workspace and container.workspace.idle_timeout_minutes is not None:
+        return container.workspace.idle_timeout_minutes
+
+    # 3. Site default (pre-fetched by caller)
+    if site_settings is not None:
+        return site_settings.default_idle_timeout_minutes
+
+    # 4. Env var fallback
+    return int(getattr(settings, 'DEFAULT_IDLE_THRESHOLD', 10))
+
+
+def get_max_duration(container, site_settings):
+    """
+    Resolve the hard session duration cap (in hours), or None for no cap.
+    Resolution order: UserLimit (most specific) → Workspace → SiteSettings
+    default.
+
+    ``site_settings`` is passed in so batch callers (e.g. close_containers) can
+    resolve it once and reuse it across many containers rather than hitting the
+    DB per container.
+    """
+    from users.models import UserLimit
+
+    # 1. Per-user limit
+    if container.user:
+        try:
+            ul = container.user.limits
+            if ul.max_session_duration_hours is not None:
+                return ul.max_session_duration_hours
+        except UserLimit.DoesNotExist:
+            pass
+
+    # 2. Workspace limit
+    if container.workspace and container.workspace.max_session_duration_hours is not None:
+        return container.workspace.max_session_duration_hours
+
+    # 3. Site default (pre-fetched by caller)
+    if site_settings is not None:
+        return site_settings.default_max_session_duration_hours
+
+    return None
