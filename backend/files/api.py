@@ -23,6 +23,7 @@ from users.auth import session_mfa_auth
 from users.models import SiteSettings
 from workspaces.api import _get_ws_for_user
 from workspaces.models import Workspace
+from audit.services import log_audit
 from .schemas import FileEntry, FileListOut, HashOut, MkdirIn, UploadOut
 
 logger = logging.getLogger(__name__)
@@ -241,7 +242,8 @@ def upload_file(
         raise HttpError(500, "Failed to upload file")
 
     rel_path = f'{subpath}/{filename}' if subpath else filename
-    logger.info("Uploaded %s (sha256=%s) to workspace %s by user %s", rel_path, sha256[:12], ws.uuid, request.auth)
+    log_audit(request, 'file.upload', workspace_uuid=str(ws.uuid), path=rel_path,
+              filename=filename, size=file.size or 0, sha256=sha256[:12])
     return UploadOut(status="uploaded", path=rel_path)
 
 
@@ -277,6 +279,8 @@ def delete_file(request: HttpRequest, ws_uuid: UUID, path: str = ""):
             raise HttpError(500, "Failed to delete file")
         logger.info("Deleted %s in workspace %s", subpath, ws.uuid)
 
+    log_audit(request, 'file.delete', workspace_uuid=str(ws.uuid), path=subpath,
+              recursive=is_folder, object_count=deleted_count if is_folder else 1)
     return {"status": "deleted", "path": subpath}
 
 
@@ -298,6 +302,7 @@ def make_dir(request: HttpRequest, ws_uuid: UUID, payload: MkdirIn):
         raise HttpError(500, "Failed to create folder")
 
     logger.info("Created folder %s in workspace %s", subpath, ws.uuid)
+    log_audit(request, 'file.mkdir', workspace_uuid=str(ws.uuid), path=f'{subpath}/')
     return UploadOut(status="created", path=f'{subpath}/')
 
 
@@ -333,7 +338,7 @@ def compute_hash(request: HttpRequest, ws_uuid: UUID, path: str = ""):
     # Compute on demand and cache.
     sha256 = _compute_sha256(client, key)
     _cache_sha256(client, key, sha256)
-    logger.info("Computed sha256=%s for %s in workspace %s", sha256[:12], subpath, ws.uuid)
+    log_audit(request, 'file.hash', workspace_uuid=str(ws.uuid), path=subpath, sha256=sha256[:12])
     return HashOut(path=subpath, sha256=sha256)
 
 
@@ -374,7 +379,8 @@ def download_protected(request: HttpRequest, ws_uuid: UUID, path: str = ""):
         response = HttpResponse(archive_data, content_type='application/x-7z-compressed')
         response['Content-Disposition'] = f'attachment; filename="{filename}-PROTECTED.7z"'
         response['Content-Length'] = str(len(archive_data))
-        logger.info("Delivered protected 7z of %s in workspace %s", subpath, ws.uuid)
+        log_audit(request, 'file.download_protected', workspace_uuid=str(ws.uuid), path=subpath,
+                  archive_size=len(archive_data))
         return response
     except client.exceptions.NoSuchKey:
         raise HttpError(404, "File not found")

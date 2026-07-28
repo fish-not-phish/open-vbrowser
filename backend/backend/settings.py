@@ -94,6 +94,7 @@ INSTALLED_APPS = [
     "cases",
     "notifications",
     "files",
+    "audit",
 ]
 
 MIDDLEWARE = [

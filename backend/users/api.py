@@ -9,6 +9,7 @@ import json
 import secrets
 import string
 from .auth import session_mfa_auth, admin_session_auth
+from audit.services import log_audit
 
 router = Router(tags=["auth"])
 
@@ -144,6 +145,7 @@ def list_api_keys(request):
 def create_api_key(request, payload: APIKeyCreateIn):
     """Create a new API key."""
     key = APIKey.objects.create(user=request.auth, name=payload.name or "")
+    log_audit(request, 'api_key.create', key_name=key.name)
     return key
 
 
@@ -156,6 +158,7 @@ def delete_api_key(request, key_uuid: str):
         return {"success": False, "message": "API key not found"}
     key.active = False
     key.save()
+    log_audit(request, 'api_key.delete', key_name=key.name)
     return {"success": True, "message": "API key revoked"}
 
 
@@ -257,6 +260,7 @@ def update_site_settings(request: HttpRequest, payload: SiteSettingsIn):
     if payload.oidc_enabled is not None and payload.oidc_enabled != prev_oidc_enabled:
         _sync_mfa_on_oidc_change(config.oidc_enabled)
 
+    log_audit(request, 'site_settings.update')
     return _site_settings_out(config)
 
 
@@ -390,6 +394,7 @@ def create_user(request: HttpRequest, payload: AdminUserCreateIn):
 
     out = _admin_user_out(user)
     out['generated_password'] = password
+    log_audit(request, 'user.create', target_user=user, email=user.email, is_admin=payload.is_admin)
     return 201, out
 
 
@@ -442,6 +447,7 @@ def revoke_session(request: HttpRequest, session_key: str):
         if str(data.get('_auth_user_id', '')) != str(user_id):
             return {"success": False, "message": "Session not found"}
         s.delete()
+        log_audit(request, 'session.revoke', session_key=session_key[:8])
         return {"success": True, "message": "Session revoked"}
     except Session.DoesNotExist:
         return {"success": False, "message": "Session not found"}
@@ -475,21 +481,29 @@ def update_user(request: HttpRequest, user_id: int, payload: AdminUserUpdateIn):
     except DjangoUser.DoesNotExist:
         raise HttpError(404, "User not found")
 
+    changes = {}
     if payload.first_name is not None:
+        changes['first_name'] = payload.first_name
         user.first_name = payload.first_name
     if payload.last_name is not None:
+        changes['last_name'] = payload.last_name
         user.last_name = payload.last_name
     if payload.email is not None:
+        changes['email'] = payload.email
         user.email = payload.email
     if payload.is_active is not None:
+        changes['is_active'] = payload.is_active
         user.is_active = payload.is_active
     user.save()
 
     if payload.is_admin is not None:
+        changes['is_admin'] = payload.is_admin
         profile, _ = UserProfile.objects.get_or_create(user=user)
         profile.is_admin = payload.is_admin
         profile.save()
 
+    if changes:
+        log_audit(request, 'user.update', target_user=user, **changes)
     return _admin_user_out(user)
 
 
@@ -852,6 +866,8 @@ def admin_add_workspace_member(request: HttpRequest, ws_uuid: str, payload: Admi
     role = payload.role if payload.role in ('owner', 'admin', 'member') else 'member'
     membership = WorkspaceMembership.objects.create(workspace=ws, user=user, role=role)
 
+    log_audit(request, 'workspace.member.add', target_user=user,
+              workspace_uuid=str(ws.uuid), workspace_name=ws.name, role=role)
     return {
         'user_id': user.id,
         'username': user.username,
@@ -889,6 +905,8 @@ def admin_change_workspace_member_role(request: HttpRequest, ws_uuid: str, user_
     membership.role = new_role
     membership.save()
 
+    log_audit(request, 'workspace.member.role_change', target_user=membership.user,
+              workspace_uuid=str(ws.uuid), workspace_name=ws.name, new_role=new_role)
     return {
         'user_id': membership.user.id,
         'username': membership.user.username,
@@ -911,10 +929,12 @@ def admin_remove_workspace_member(request: HttpRequest, ws_uuid: str, user_id: i
         raise HttpError(404, "Workspace not found")
 
     try:
-        membership = WorkspaceMembership.objects.get(workspace=ws, user_id=user_id)
+        membership = WorkspaceMembership.objects.select_related('user').get(workspace=ws, user_id=user_id)
     except WorkspaceMembership.DoesNotExist:
         raise HttpError(404, "Member not found")
 
+    log_audit(request, 'workspace.member.remove', target_user=membership.user,
+              workspace_uuid=str(ws.uuid), workspace_name=ws.name)
     membership.delete()
     return {"success": True, "message": "Member removed"}
 
@@ -932,4 +952,5 @@ def reset_user_password(request: HttpRequest, user_id: int):
     password = ''.join(secrets.choice(alphabet) for _ in range(16))
     user.set_password(password)
     user.save()
+    log_audit(request, 'user.password_reset', target_user=user)
     return {"generated_password": password}

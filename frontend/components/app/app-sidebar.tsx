@@ -35,6 +35,7 @@ import {
   LayoutDashboardIcon,
   Building2Icon,
   GaugeIcon,
+  ScrollTextIcon,
 } from 'lucide-react'
 import { WorkspaceSwitcher } from './workspace-switcher'
 import { NavUser } from './nav-user'
@@ -70,6 +71,7 @@ const adminItems: MenuItem[] = [
   { icon: <LayoutDashboardIcon />, label: 'Dashboard', href: '/admin/dashboard' },
   { icon: <Building2Icon />, label: 'Workspaces', href: '/admin/workspaces' },
   { icon: <UsersIcon />, label: 'Users', href: '/admin/users' },
+  { icon: <ScrollTextIcon />, label: 'Audit Log', href: '/admin/audit' },
   { icon: <SettingsIcon />, label: 'Site Settings', href: '/admin/settings' },
 ]
 

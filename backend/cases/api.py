@@ -3,6 +3,7 @@ from ninja.files import UploadedFile
 from django.http import HttpRequest, FileResponse
 from ninja.errors import HttpError
 from users.auth import session_mfa_auth
+from audit.services import log_audit
 from .models import Case, Tag, SessionNote, CaseComment, CaseAttachment
 from .schemas import (
     CaseCreateIn, CaseUpdateIn, CaseOut, TagCreateIn, TagOut,
@@ -86,6 +87,8 @@ def create_case(request: HttpRequest, payload: CaseCreateIn):
         workspace=workspace,
         created_by=request.auth,
     )
+    log_audit(request, 'case.create', case_uuid=str(case.uuid), case_name=case.name,
+              workspace_uuid=str(workspace.uuid) if workspace else None)
     return 201, _case_out(case)
 
 
@@ -148,19 +151,26 @@ def _get_editable_case(request, case_uuid):
 def update_case(request: HttpRequest, case_uuid: UUID, payload: CaseUpdateIn):
     case = _get_editable_case(request, case_uuid)
 
+    changes = {}
     if payload.name is not None:
+        changes['name'] = payload.name
         case.name = payload.name
     if payload.description is not None:
+        changes['description'] = payload.description
         case.description = payload.description
     if payload.status is not None:
+        changes['status'] = payload.status
         case.status = payload.status
     case.save()
+    if changes:
+        log_audit(request, 'case.update', case_uuid=str(case.uuid), case_name=case.name, **changes)
     return _case_out(case)
 
 
 @router.delete("/{case_uuid}/", response={200: dict}, auth=session_mfa_auth)
 def delete_case(request: HttpRequest, case_uuid: UUID):
     case = _get_editable_case(request, case_uuid)
+    log_audit(request, 'case.delete', case_uuid=str(case.uuid), case_name=case.name)
     case.status = 'archived'
     case.save()
     return {"status": "archived"}
@@ -269,6 +279,8 @@ def upload_attachment(request: HttpRequest, case_uuid: UUID, file: UploadedFile 
         content_type=file.content_type or "application/octet-stream",
         size_bytes=file.size or 0,
     )
+    log_audit(request, 'case.attachment.upload', case_uuid=str(case.uuid), case_name=case.name,
+              attachment_uuid=str(att.uuid), filename=att.filename, size=att.size_bytes)
     return 201, _attachment_out(att, request)
 
 
@@ -291,6 +303,8 @@ def delete_attachment(request: HttpRequest, case_uuid: UUID, attachment_uuid: UU
     profile, _ = UserProfile.objects.get_or_create(user=request.auth)
     if not is_uploader and not is_privileged and not profile.is_admin:
         raise HttpError(403, "Not allowed")
+    log_audit(request, 'case.attachment.delete', case_uuid=str(case.uuid), case_name=case.name,
+              attachment_uuid=str(att.uuid), filename=att.filename)
     att.file.delete(save=False)
     att.delete()
     return {"status": "deleted"}

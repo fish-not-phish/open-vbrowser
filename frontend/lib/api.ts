@@ -730,6 +730,41 @@ export const notificationsApi = {
     apiFetch<{ updated: number }>('/v1/notifications/read-all', { method: 'POST', csrfToken }),
 };
 
+// ─── Audit Log ────────────────────────────────────────────────────────────────
+
+export interface AuditLogEntry {
+  id: number;
+  timestamp: string;
+  actor_id: number | null;
+  actor_username: string | null;
+  action: string;
+  target_user_id: number | null;
+  target_user_username: string | null;
+  ip_address: string | null;
+  metadata: Record<string, unknown>;
+}
+
+export const auditApi = {
+  list: (params?: {
+    action?: string;
+    actor_id?: number;
+    target_user_id?: number;
+    q?: string;
+    limit?: number;
+    offset?: number;
+  }) => {
+    const qs = new URLSearchParams();
+    if (params?.action) qs.set('action', params.action);
+    if (params?.actor_id != null) qs.set('actor_id', String(params.actor_id));
+    if (params?.target_user_id != null) qs.set('target_user_id', String(params.target_user_id));
+    if (params?.q) qs.set('q', params.q);
+    if (params?.limit != null) qs.set('limit', String(params.limit));
+    if (params?.offset != null) qs.set('offset', String(params.offset));
+    const q = qs.toString();
+    return apiFetch<AuditLogEntry[]>(`/v1/audit/${q ? '?' + q : ''}`);
+  },
+};
+
 export interface DjangoSession {
   session_key: string;
   last_activity: string | null;

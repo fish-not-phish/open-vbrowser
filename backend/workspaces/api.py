@@ -6,6 +6,7 @@ from django.core.files.storage import default_storage
 from ninja.errors import HttpError
 from django.contrib.auth.models import User
 from users.auth import session_mfa_auth, admin_session_auth
+from audit.services import log_audit
 from .models import Workspace, WorkspaceMembership
 from uuid import UUID
 from typing import List, Optional
@@ -144,6 +145,7 @@ def create_workspace(request: HttpRequest, payload: WorkspaceCreateIn):
         created_by=request.auth,
     )
     WorkspaceMembership.objects.create(workspace=ws, user=request.auth, role='owner')
+    log_audit(request, 'workspace.create', workspace_uuid=str(ws.uuid), workspace_name=ws.name, slug=ws.slug)
     return 201, _ws_out(ws, request.auth, request)
 
 
@@ -197,6 +199,7 @@ def update_workspace(request: HttpRequest, ws_uuid: UUID, payload: WorkspaceUpda
         ws.enable_persistent_storage = payload.enable_persistent_storage and _site.enable_persistent_storage
 
     ws.save()
+    log_audit(request, 'workspace.update', workspace_uuid=str(ws.uuid), workspace_name=ws.name)
     return _ws_out(ws, request.auth, request)
 
 
@@ -210,6 +213,7 @@ def delete_workspace(request: HttpRequest, ws_uuid: UUID):
     if membership.role != 'owner':
         raise HttpError(403, "Only workspace owners can delete workspaces")
 
+    log_audit(request, 'workspace.delete', workspace_uuid=str(ws.uuid), workspace_name=ws.name, slug=ws.slug)
     ws.delete()
     return {"status": "deleted"}
 
@@ -227,9 +231,11 @@ def leave_workspace(request: HttpRequest, ws_uuid: UUID):
     membership.delete()
 
     if member_count <= 1:
+        log_audit(request, 'workspace.leave', workspace_uuid=str(ws.uuid), workspace_name=ws.name, result='deleted')
         ws.delete()
         return {"status": "deleted"}
 
+    log_audit(request, 'workspace.leave', workspace_uuid=str(ws.uuid), workspace_name=ws.name, result='left')
     return {"status": "left"}
 
 
@@ -355,6 +361,8 @@ def invite_member(request: HttpRequest, ws_uuid: UUID, payload: MemberInviteIn):
     if not created:
         raise HttpError(409, "User is already a member")
 
+    log_audit(request, 'workspace.member.add', target_user=user,
+              workspace_uuid=str(ws.uuid), workspace_name=ws.name, role=m.role)
     return 201, {
         "user_id": user.id, "username": user.username,
         "email": user.email, "role": m.role, "joined_at": m.joined_at,
@@ -382,6 +390,8 @@ def remove_member(request: HttpRequest, ws_uuid: UUID, user_id: int):
     if caller_membership.role == 'admin' and m.role == 'owner':
         raise HttpError(403, "Admins cannot remove owners")
 
+    log_audit(request, 'workspace.member.remove', target_user=m.user,
+              workspace_uuid=str(ws.uuid), workspace_name=ws.name)
     m.delete()
     return {"status": "removed"}
 
@@ -416,6 +426,8 @@ def change_member_role(request: HttpRequest, ws_uuid: UUID, user_id: int, payloa
 
     m.role = payload.role
     m.save()
+    log_audit(request, 'workspace.member.role_change', target_user=m.user,
+              workspace_uuid=str(ws.uuid), workspace_name=ws.name, new_role=payload.role)
     return {
         "user_id": m.user.id, "username": m.user.username,
         "email": m.user.email, "role": m.role, "joined_at": m.joined_at,
@@ -716,4 +728,6 @@ def set_workspace_browsers(request: HttpRequest, ws_uuid: UUID, payload: Browser
 
     browsers = BrowserImage.objects.filter(slug__in=payload.slugs)
     ws.allowed_browsers.set(browsers)
+    log_audit(request, 'workspace.browsers.set', workspace_uuid=str(ws.uuid),
+              workspace_name=ws.name, browsers=payload.slugs)
     return list(ws.allowed_browsers.values_list('slug', flat=True))

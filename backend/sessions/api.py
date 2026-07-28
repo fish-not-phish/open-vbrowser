@@ -14,6 +14,7 @@ from ninja.errors import HttpError
 
 from users.auth import session_mfa_auth
 from users.models import SiteSettings, UserLimit
+from audit.services import log_audit
 from .models import Container, OpenContainers, TrafficEvent
 from .services import get_idle_threshold, get_max_duration
 from .schemas import (
@@ -296,6 +297,9 @@ def create_session(request: HttpRequest, payload: SessionCreateIn):
         enable_persistent_storage,
     )
 
+    log_audit(request, 'session.create', session_uuid=str(container.uuid),
+              session_type=container.type, browser=payload.browser_type,
+              workspace_uuid=str(workspace.uuid) if workspace else None)
     return 201, _session_to_detail(container)
 
 
@@ -382,6 +386,8 @@ def close_session(request: HttpRequest, uuid: str):
     except Container.DoesNotExist:
         raise HttpError(404, "Active session not found")
 
+    log_audit(request, 'session.close', session_uuid=str(container.uuid),
+              session_type=container.type, workspace_uuid=str(container.workspace.uuid) if container.workspace_id else None)
     delete_container.delay(str(container.uuid))
     return {"status": "terminating"}
 
