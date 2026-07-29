@@ -1,6 +1,7 @@
 import os
 import json
 import time
+import hashlib
 import requests
 from django.core.management.base import BaseCommand, CommandError
 from django.conf import settings
@@ -292,10 +293,37 @@ def run_browser_task(browser_type, container_uuid, auto_open_url, username, sess
     public_ip  = eni['NetworkInterfaces'][0]['Association']['PublicIp']
     private_ip = eni['NetworkInterfaces'][0]['PrivateIpAddress']
 
-    # 8) Extra warm-up wait
-    time.sleep(30)
+    # 8) Create Cloudflare DNS A record BEFORE the warm-up wait.
+    #
+    # The DNS record needs time to propagate to all Cloudflare edge servers
+    # before the browser tries to resolve it.  The old in-container 1-app.sh
+    # created the record at container startup — ~30 s before the callback was
+    # ever sent — so by the time the frontend redirected, the record was fully
+    # propagated.  We replicate that timing here: create the record, THEN wait
+    # 30 s for warm-up (which also serves as DNS propagation time), THEN send
+    # the callback that flips the session to "active".
+    #
+    # If we create the record in the callback handler instead, the browser
+    # tries to resolve it ~1 s later — before Cloudflare has propagated it to
+    # all edge servers — gets NXDOMAIN, and caches it (negative caching).
+    if not DEV_MODE:
+        from sessions.cloudflare import upsert_a_record, CloudflareError
+        subdomain_hash = hashlib.md5((str(container_uuid) + "\n").encode()).hexdigest()
+        subdomain = f"browser-{subdomain_hash}.{CUSTOM_DOMAIN}"
+        try:
+            upsert_a_record(subdomain, public_ip)
+        except (requests.RequestException, CloudflareError) as exc:
+            # Log but don't abort — the container is running.  The user can
+            # retry if DNS doesn't resolve.
+            import logging
+            logging.getLogger(__name__).error(
+                "DNS upsert failed for %s -> %s: %s", subdomain, public_ip, exc
+            )
 
-    # 9) POST back the callback
+    # 9) Extra warm-up wait (also gives DNS time to propagate)
+    time.sleep(40)
+
+    # 10) POST back the callback
     payload = {
         'uuid':              container_uuid,
         'public_ip':         public_ip,

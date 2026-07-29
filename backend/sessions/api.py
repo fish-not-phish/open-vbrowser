@@ -345,6 +345,11 @@ def container_data_returned(request: HttpRequest, uuid: str, payload: SessionCal
     subdomain = f"browser-{subdomain_hash}.{settings.CUSTOM_DOMAIN}"
     container_url = f"https://{subdomain}/?token={container.uuid}"
 
+    # NOTE: DNS record creation happens in start.py BEFORE the 30 s warm-up
+    # wait, so by the time this callback fires the record has been propagating
+    # for ~30 s.  We must NOT create it here — that would leave only ~1 s
+    # before the browser tries to resolve it (negative-caching risk).
+
     container.ip_address = payload.public_ip
     container.private_ip = payload.private_ip
     container.task_arn = payload.task_arn
