@@ -16,6 +16,7 @@ import {
   Activity, ArrowLeft, ChevronLeft, ChevronRight, Flag, Search, X,
 } from "lucide-react";
 import { Toggle } from "@/components/ui/toggle";
+import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
 import { motion, AnimatePresence } from "motion/react";
 
@@ -213,7 +214,7 @@ export default function TrafficLogPage() {
             key={m}
             onClick={() => toggleMethod(m)}
             className={cn(
-              "inline-flex items-center rounded px-2 py-1 text-[11px] font-semibold font-mono border transition-all",
+              "inline-flex items-center rounded px-2 py-1 text-[11px] font-semibold font-mono border cursor-pointer transition-all",
               selectedMethods.has(m)
                 ? METHOD_COLORS[m] + " border-transparent ring-1 ring-current"
                 : "bg-transparent border-border text-muted-foreground hover:border-muted-foreground/50"
@@ -313,24 +314,34 @@ export default function TrafficLogPage() {
                     <MethodBadge method={e.method} />
                   </TableCell>
                   <TableCell className="text-foreground truncate max-w-[260px]">
-                    <span title={e.host}>{e.host}</span>
+                    <Tooltip>
+                      <TooltipTrigger asChild><span className="truncate inline-block max-w-full">{e.host}</span></TooltipTrigger>
+                      <TooltipContent>{e.host}</TooltipContent>
+                    </Tooltip>
                   </TableCell>
                   <TableCell className="text-muted-foreground break-all">
-                    <span title={e.url}>{e.url}</span>
+                    <Tooltip>
+                      <TooltipTrigger asChild><span>{e.url}</span></TooltipTrigger>
+                      <TooltipContent className="max-w-md break-all">{e.url}</TooltipContent>
+                    </Tooltip>
                   </TableCell>
                   <TableCell className="text-right pr-3">
-                    <button
-                      onClick={() => toggleFlag(e)}
-                      title={e.flagged ? "Remove flag" : "Flag for review"}
-                      className={cn(
-                        "rounded p-1 transition-colors",
-                        e.flagged
-                          ? "text-amber-500 hover:text-amber-600"
-                          : "text-muted-foreground/30 hover:text-amber-400"
-                      )}
-                    >
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <button
+                          onClick={() => toggleFlag(e)}
+                          className={cn(
+                            "cursor-pointer rounded p-1 transition-colors",
+                            e.flagged
+                              ? "text-amber-500 hover:text-amber-600"
+                              : "text-muted-foreground/30 hover:text-amber-400"
+                          )}
+                        >
                       <Flag className="size-3.5" />
                     </button>
+                      </TooltipTrigger>
+                      <TooltipContent>{e.flagged ? "Remove flag" : "Flag for review"}</TooltipContent>
+                    </Tooltip>
                   </TableCell>
                 </motion.tr>
               ))

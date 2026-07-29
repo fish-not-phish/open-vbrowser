@@ -191,7 +191,7 @@ function PasswordSection({ csrfToken }: { csrfToken: string }) {
               />
               <button
                 type="button"
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                className="absolute right-3 top-1/2 -translate-y-1/2 cursor-pointer text-muted-foreground hover:text-foreground"
                 onClick={() => setShowCurrent((v) => !v)}
               >
                 {showCurrent ? <EyeOffIcon className="size-4" /> : <EyeIcon className="size-4" />}
@@ -212,7 +212,7 @@ function PasswordSection({ csrfToken }: { csrfToken: string }) {
               />
               <button
                 type="button"
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                className="absolute right-3 top-1/2 -translate-y-1/2 cursor-pointer text-muted-foreground hover:text-foreground"
                 onClick={() => setShowNext((v) => !v)}
               >
                 {showNext ? <EyeOffIcon className="size-4" /> : <EyeIcon className="size-4" />}
@@ -248,7 +248,7 @@ function PasswordSection({ csrfToken }: { csrfToken: string }) {
               />
               <button
                 type="button"
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                className="absolute right-3 top-1/2 -translate-y-1/2 cursor-pointer text-muted-foreground hover:text-foreground"
                 onClick={() => setShowConfirm((v) => !v)}
               >
                 {showConfirm ? <EyeOffIcon className="size-4" /> : <EyeIcon className="size-4" />}

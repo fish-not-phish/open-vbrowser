@@ -2,7 +2,7 @@
 
 import React from "react";
 import { useParams, useRouter } from "next/navigation";
-import { casesApi, type Case } from "@/lib/api";
+import { casesApi, type Case, roleAtLeast } from "@/lib/api";
 import { useAuthContext } from "@/store/AuthContext";
 import { useWorkspace } from "@/store/WorkspaceContext";
 import { Button } from "@/components/ui/button";
@@ -136,7 +136,7 @@ const STATUS_TABS = ["all", "open", "closed", "archived"] as const;
 export default function CasesPage() {
   const { workspace_uuid } = useParams<{ workspace_uuid: string }>();
   const { user } = useAuthContext();
-  const { workspaces, setActiveWorkspace } = useWorkspace();
+  const { workspaces, setActiveWorkspace, activeWorkspace } = useWorkspace();
   const router = useRouter();
 
   // Sync active workspace from URL param + redirect personal workspaces away
@@ -216,16 +216,18 @@ export default function CasesPage() {
           <h1 className="text-xl font-semibold tracking-tight">Cases</h1>
           <p className="text-muted-foreground text-sm mt-0.5">Organise sessions into investigations and track their progress.</p>
         </div>
-        <Button size="sm" className="gap-1.5" onClick={() => setCreateOpen(true)}>
-          <Plus className="size-3.5" />New case
-        </Button>
+        {roleAtLeast(activeWorkspace?.role, "analyst") && (
+          <Button size="sm" className="gap-1.5" onClick={() => setCreateOpen(true)}>
+            <Plus className="size-3.5" />New case
+          </Button>
+        )}
       </motion.div>
 
       <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3, delay: 0.05 }} className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-center gap-0.5 rounded-lg border border-border/60 bg-muted/20 p-0.5">
           {STATUS_TABS.map((t) => (
             <button key={t} onClick={() => setTab(t)} className={cn(
-              "px-3 py-1 rounded-md text-xs font-medium transition-colors capitalize",
+              "px-3 py-1 rounded-md text-xs font-medium cursor-pointer transition-colors capitalize",
               tab === t ? "bg-background text-foreground shadow-sm border border-border/60" : "text-muted-foreground hover:text-foreground"
             )}>
               {t}<span className={cn("ml-1.5 tabular-nums", tab === t ? "text-primary" : "text-muted-foreground/60")}>{counts[t]}</span>
@@ -238,7 +240,7 @@ export default function CasesPage() {
           <AnimatePresence>
             {search && (
               <motion.button initial={{ opacity: 0, scale: 0.8 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.8 }}
-                onClick={() => setSearch("")} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground">
+                onClick={() => setSearch("")} className="absolute right-2.5 top-1/2 -translate-y-1/2 cursor-pointer text-muted-foreground hover:text-foreground">
                 <X className="size-3.5" />
               </motion.button>
             )}
@@ -275,7 +277,7 @@ export default function CasesPage() {
                     <p className="text-sm text-muted-foreground">
                       {search || tab !== "all" ? "No cases match your filters." : "No cases yet. Create one to get started."}
                     </p>
-                    {!search && tab === "all" && (
+                    {!search && tab === "all" && roleAtLeast(activeWorkspace?.role, "analyst") && (
                       <Button size="sm" variant="outline" onClick={() => setCreateOpen(true)}>
                         <Plus className="size-3.5 mr-1.5" />New case
                       </Button>
@@ -299,6 +301,7 @@ export default function CasesPage() {
                   <TableCell className="text-muted-foreground font-mono text-xs">{formatDate(c.created_at)}</TableCell>
                   <TableCell className="text-muted-foreground font-mono text-xs">{formatDate(c.updated_at)}</TableCell>
                   <TableCell onClick={(e) => e.stopPropagation()}>
+                    {roleAtLeast(activeWorkspace?.role, "analyst") && (
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
                         <Button variant="ghost" size="icon" className="size-7 opacity-0 group-hover:opacity-100 transition-opacity">
@@ -313,6 +316,7 @@ export default function CasesPage() {
                         </DropdownMenuItem>
                       </DropdownMenuContent>
                     </DropdownMenu>
+                    )}
                   </TableCell>
                 </motion.tr>
               ))

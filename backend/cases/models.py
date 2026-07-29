@@ -93,3 +93,29 @@ class CaseAttachment(models.Model):
 
     def __str__(self):
         return f"{self.filename} on case {self.case_id}"
+
+
+class CaseFileLink(models.Model):
+    """A read-only reference from a case to a file that lives in the workspace's
+    S3 persistent storage. No bytes are copied — the link only stores the S3
+    path (relative to the workspace prefix) and snapshotted metadata so the
+    case's Files list stays useful even if the source object is later removed.
+    """
+    uuid = models.UUIDField(default=_uuid.uuid4, editable=False, unique=True)
+    case = models.ForeignKey(Case, on_delete=models.CASCADE, related_name='file_links')
+    workspace = models.ForeignKey(
+        'workspaces.Workspace', on_delete=models.CASCADE, related_name='case_file_links'
+    )
+    s3_path = models.CharField(max_length=1024, help_text="Path relative to the workspace S3 prefix.")
+    filename = models.CharField(max_length=255)
+    size_bytes = models.PositiveBigIntegerField(default=0)
+    sha256 = models.CharField(max_length=64, blank=True)
+    linked_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-created_at']
+        unique_together = [('case', 's3_path')]
+
+    def __str__(self):
+        return f"{self.filename} linked on case {self.case_id}"

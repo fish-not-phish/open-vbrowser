@@ -11,12 +11,16 @@ import { Skeleton } from "@/components/ui/skeleton";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
+import {
+  DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip";
 import { toast } from "sonner";
 import { AnimatePresence, motion } from "motion/react";
 import {
-  SearchIcon, X, ChevronLeft, ChevronRight, ScrollText,
+  SearchIcon, X, ChevronLeft, ChevronRight, ScrollText, Download, Loader2,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -140,6 +144,7 @@ export default function AuditLogPage() {
   const [actionFilter, setActionFilter] = React.useState<string>("all");
   const [offset, setOffset] = React.useState(0);
   const [hasMore, setHasMore] = React.useState(false);
+  const [exporting, setExporting] = React.useState(false);
 
   React.useEffect(() => {
     if (!user.isLoggedIn) { router.replace("/login"); return; }
@@ -176,6 +181,33 @@ export default function AuditLogPage() {
   // Reset offset when filters change
   React.useEffect(() => { setOffset(0); }, [actionFilter, search]);
 
+  async function handleExport(fmt: "json" | "csv") {
+    setExporting(true);
+    try {
+      const res = await auditApi.export(fmt, {
+        action: actionFilter !== "all" ? actionFilter : undefined,
+        q: search.trim() || undefined,
+      });
+      if (!res.ok) throw new Error("Export failed");
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      const cd = res.headers.get("Content-Disposition");
+      const match = cd?.match(/filename="?([^"]+)"?/);
+      a.download = match?.[1] ?? `audit-log.${fmt}`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      toast.success(`Exported as ${fmt.toUpperCase()}`);
+    } catch {
+      toast.error("Failed to export audit log");
+    } finally {
+      setExporting(false);
+    }
+  }
+
   if (!user.isLoggedIn || !user.isAdmin) return null;
 
   return (
@@ -196,6 +228,24 @@ export default function AuditLogPage() {
             Track administrative actions across the platform.
           </p>
         </div>
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="outline" size="sm" disabled={exporting}>
+              {exporting
+                ? <Loader2 className="size-4 animate-spin" />
+                : <Download className="size-4" />}
+              Export
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end">
+            <DropdownMenuItem onClick={() => handleExport("json")}>
+              Export as JSON
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => handleExport("csv")}>
+              Export as CSV
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
       </motion.div>
 
       {/* Filters */}
@@ -300,8 +350,11 @@ export default function AuditLogPage() {
                   <TableCell className="text-sm">
                     {entry.target_user_username ?? "—"}
                   </TableCell>
-                  <TableCell className="text-xs text-muted-foreground font-mono truncate max-w-[300px]" title={formatMetadata(entry.metadata)}>
-                    {formatMetadata(entry.metadata) || "—"}
+                  <TableCell className="text-xs text-muted-foreground font-mono truncate max-w-[300px]">
+                    <Tooltip>
+                      <TooltipTrigger asChild><span className="truncate inline-block max-w-full">{formatMetadata(entry.metadata) || "—"}</span></TooltipTrigger>
+                      <TooltipContent className="max-w-md break-all">{formatMetadata(entry.metadata) || "—"}</TooltipContent>
+                    </Tooltip>
                   </TableCell>
                   <TableCell className="text-xs text-muted-foreground font-mono">
                     {entry.ip_address ?? "—"}

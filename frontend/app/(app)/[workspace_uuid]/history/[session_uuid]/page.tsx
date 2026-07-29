@@ -6,7 +6,7 @@ import { useAuthContext } from "@/store/AuthContext";
 import { useWorkspace } from "@/store/WorkspaceContext";
 import {
   sessionsApi, casesApi,
-  type SessionHistory, type Note, type TrafficEvent, type Tag, type Case,
+  type SessionHistory, type Note, type TrafficEvent, type IOC, type Tag, type Case,
 } from "@/lib/api";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -22,6 +22,7 @@ import {
   Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList,
 } from "@/components/ui/command";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import {
@@ -115,12 +116,13 @@ export default function SessionDetailPage() {
   const [session, setSession]         = React.useState<SessionHistory | null>(null);
   const [notes, setNotes]             = React.useState<Note[]>([]);
   const [traffic, setTraffic]         = React.useState<TrafficEvent[]>([]);
+  const [iocs, setIocs]               = React.useState<IOC[]>([]);
   const [allTags, setAllTags]         = React.useState<Tag[]>([]);
   const [allCases, setAllCases]       = React.useState<Case[]>([]);
   const [loading, setLoading]         = React.useState(true);
 
   // ── UI state ─────────────────────────────────────────────────────────────
-  const [activeTab, setActiveTab]     = React.useState<"overview" | "notes" | "network">("overview");
+  const [activeTab, setActiveTab]     = React.useState<"overview" | "notes" | "network" | "iocs">("overview");
   const [noteBody, setNoteBody]       = React.useState("");
   const [addingNote, setAddingNote]   = React.useState(false);
 
@@ -170,8 +172,12 @@ export default function SessionDetailPage() {
       setAllCases(cases);
 
       if (s.enable_traffic_log) {
-        const events = await sessionsApi.trafficLogs(session_uuid, { page: 1 });
+        const [events, iocList] = await Promise.all([
+          sessionsApi.trafficLogs(session_uuid, { page: 1 }),
+          sessionsApi.iocs(session_uuid),
+        ]);
         setTraffic(events);
+        setIocs(iocList);
       }
     } catch {
       toast.error("Failed to load session");
@@ -332,6 +338,7 @@ export default function SessionDetailPage() {
     { id: "overview", label: "Overview" },
     { id: "notes",    label: `Notes${session ? ` (${session.notes_count})` : ""}` },
     ...(session?.enable_traffic_log ? [{ id: "network", label: `Network (${traffic.length})` }] : []),
+    ...(session?.enable_traffic_log ? [{ id: "iocs", label: `IOCs (${iocs.length})` }] : []),
   ] as const;
 
   // ── Render ────────────────────────────────────────────────────────────────
@@ -459,7 +466,7 @@ export default function SessionDetailPage() {
               key={tab.id}
               onClick={() => setActiveTab(tab.id as typeof activeTab)}
               className={cn(
-                "px-4 py-2 text-sm font-medium border-b-2 -mb-px transition-colors",
+                "px-4 py-2 text-sm font-medium border-b-2 -mb-px cursor-pointer transition-colors",
                 activeTab === tab.id
                   ? "border-primary text-foreground"
                   : "border-transparent text-muted-foreground hover:text-foreground"
@@ -684,7 +691,7 @@ export default function SessionDetailPage() {
                               <button
                                 onClick={() => tagUuid && removeTag(tagUuid)}
                                 disabled={tagBusy}
-                                className="ml-0.5 rounded-full p-0.5 hover:bg-muted-foreground/20 transition-colors"
+                                className="ml-0.5 cursor-pointer rounded-full p-0.5 hover:bg-muted-foreground/20 transition-colors"
                               >
                                 <X className="size-2.5" />
                               </button>
@@ -842,18 +849,89 @@ export default function SessionDetailPage() {
                           {format(new Date(e.timestamp), "HH:mm:ss")}
                         </TableCell>
                         <TableCell><MethodBadge method={e.method} /></TableCell>
-                        <TableCell className="truncate max-w-[220px]" title={e.host}>{e.host}</TableCell>
-                        <TableCell className="text-muted-foreground truncate max-w-xs" title={e.url}>{e.url}</TableCell>
+                        <TableCell className="truncate max-w-[220px]">
+                          <Tooltip>
+                            <TooltipTrigger asChild><span className="truncate inline-block max-w-full">{e.host}</span></TooltipTrigger>
+                            <TooltipContent>{e.host}</TooltipContent>
+                          </Tooltip>
+                        </TableCell>
+                        <TableCell className="text-muted-foreground truncate max-w-xs">
+                          <Tooltip>
+                            <TooltipTrigger asChild><span className="truncate inline-block max-w-full">{e.url}</span></TooltipTrigger>
+                            <TooltipContent className="max-w-md break-all">{e.url}</TooltipContent>
+                          </Tooltip>
+                        </TableCell>
                         <TableCell className="pr-3 text-right">
                           <button
                             onClick={() => toggleFlag(e)}
                             className={cn(
-                              "rounded p-0.5 transition-colors",
+                              "cursor-pointer rounded p-0.5 transition-colors",
                               e.flagged ? "text-amber-500 hover:text-amber-600" : "text-muted-foreground/30 hover:text-amber-400"
                             )}
                           >
                             <Flag className="size-3" />
                           </button>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+            </div>
+          )}
+
+          {/* ── IOCs ── */}
+          {activeTab === "iocs" && (
+            <div className="space-y-3">
+              <p className="text-sm text-muted-foreground">
+                {iocs.length} unique {iocs.length === 1 ? "host" : "hosts"} contacted
+              </p>
+              <div className="rounded-xl border bg-card overflow-hidden">
+                <Table>
+                  <TableHeader>
+                    <TableRow className="bg-muted/40 hover:bg-muted/40">
+                      <TableHead className="font-mono text-[11px]">Host</TableHead>
+                      <TableHead className="w-[80px]">Type</TableHead>
+                      <TableHead className="w-[80px] text-right">Events</TableHead>
+                      <TableHead className="w-[60px] text-right">Flagged</TableHead>
+                      <TableHead className="w-[160px]">First Seen</TableHead>
+                      <TableHead className="w-[160px]">Last Seen</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {iocs.length === 0 ? (
+                      <TableRow>
+                        <TableCell colSpan={6}>
+                          <div className="flex flex-col items-center justify-center py-10 gap-2">
+                            <Activity className="size-8 text-muted-foreground/30" />
+                            <p className="text-sm text-muted-foreground">No hosts recorded</p>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    ) : iocs.map((ioc) => (
+                      <TableRow key={ioc.host} className="font-mono text-xs border-b last:border-b-0">
+                        <TableCell className="truncate max-w-[300px]">
+                          <Tooltip>
+                            <TooltipTrigger asChild><span className="truncate inline-block max-w-full">{ioc.host}</span></TooltipTrigger>
+                            <TooltipContent>{ioc.host}</TooltipContent>
+                          </Tooltip>
+                        </TableCell>
+                        <TableCell>
+                          <Badge variant={ioc.is_ip ? "secondary" : "outline"} className="text-[10px]">
+                            {ioc.is_ip ? "IP" : "Domain"}
+                          </Badge>
+                        </TableCell>
+                        <TableCell className="text-right tabular-nums">{ioc.event_count}</TableCell>
+                        <TableCell className="text-right tabular-nums">
+                          {ioc.flagged_count > 0 ? (
+                            <span className="text-amber-500">{ioc.flagged_count}</span>
+                          ) : "—"}
+                        </TableCell>
+                        <TableCell className="text-muted-foreground whitespace-nowrap">
+                          {format(new Date(ioc.first_seen), "MMM d, HH:mm:ss")}
+                        </TableCell>
+                        <TableCell className="text-muted-foreground whitespace-nowrap">
+                          {format(new Date(ioc.last_seen), "MMM d, HH:mm:ss")}
                         </TableCell>
                       </TableRow>
                     ))}

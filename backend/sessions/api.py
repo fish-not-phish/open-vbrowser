@@ -1,4 +1,5 @@
 import hashlib
+import re
 import secrets
 from datetime import datetime, timedelta
 from decimal import Decimal
@@ -6,7 +7,7 @@ from typing import Optional
 
 from django.conf import settings
 from django.contrib.auth.models import User
-from django.db.models import Sum, Count
+from django.db.models import Sum, Count, Q, Min, Max
 from django.http import HttpRequest
 from django.utils import timezone
 from ninja import Router
@@ -15,12 +16,13 @@ from ninja.errors import HttpError
 from users.auth import session_mfa_auth
 from users.models import SiteSettings, UserLimit
 from audit.services import log_audit
+from workspaces.permissions import require_role
 from .models import Container, OpenContainers, TrafficEvent
 from .services import get_idle_threshold, get_max_duration
 from .schemas import (
     SessionCreateIn, SessionStatusOut, SessionDetailOut, SessionCallbackIn,
     SessionHistoryOut, NoteCreateIn, NoteOut, TagAssignIn, CaseAssignIn,
-    SpendOut, TrafficEventIn, TrafficEventOut,
+    SpendOut, TrafficEventIn, TrafficEventOut, IOCOut,
 )
 
 router = Router(tags=["sessions"])
@@ -186,6 +188,7 @@ def create_session(request: HttpRequest, payload: SessionCreateIn):
             )
         except Workspace.DoesNotExist:
             raise HttpError(404, "Workspace not found or you are not a member")
+        require_role(workspace, user, 'analyst')
 
         # Block sessions in personal workspaces when personal workspaces are disabled
         if workspace.is_personal:
@@ -505,6 +508,45 @@ def get_traffic_events(
             "flagged": e.flagged,
         }
         for e in events
+    ]
+
+
+_IPV4_RE = re.compile(r'^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}$')
+
+
+@router.get("/{uuid}/traffic/iocs/", response=list[IOCOut], auth=session_mfa_auth)
+def get_traffic_iocs(request: HttpRequest, uuid: str):
+    """Return unique hosts (domains + IPs) aggregated from traffic events.
+
+    Each row includes the event count, first/last seen timestamps, and how
+    many events for that host were flagged. Hosts are classified as IP
+    addresses when they match an IPv4 pattern.
+    """
+    try:
+        container = Container.objects.get(uuid=uuid, user=request.auth)
+    except Container.DoesNotExist:
+        raise HttpError(404, "Session not found")
+
+    if not container.enable_traffic_log:
+        raise HttpError(404, "Network logging was not enabled for this session")
+
+    qs = container.traffic_events.values('host').annotate(
+        event_count=Count('id'),
+        first_seen=Min('timestamp'),
+        last_seen=Max('timestamp'),
+        flagged_count=Count('id', filter=Q(flagged=True)),
+    ).order_by('-event_count')
+
+    return [
+        {
+            "host": row['host'],
+            "is_ip": bool(_IPV4_RE.match(row['host'])),
+            "event_count": row['event_count'],
+            "first_seen": row['first_seen'],
+            "last_seen": row['last_seen'],
+            "flagged_count": row['flagged_count'],
+        }
+        for row in qs
     ]
 
 

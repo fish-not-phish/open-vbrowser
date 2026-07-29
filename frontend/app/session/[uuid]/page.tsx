@@ -15,6 +15,7 @@ import { toast } from "sonner";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import { Input } from "@/components/ui/input";
+import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip";
 
 import { cn } from "@/lib/utils";
 import { AnimatePresence, motion } from "motion/react";
@@ -371,7 +372,7 @@ export default function SessionPage() {
                   type="button"
                   onClick={() => setSidebarOpen(false)}
                   aria-label="Close panel"
-                  className="text-muted-foreground hover:text-foreground transition-colors"
+                  className="cursor-pointer text-muted-foreground hover:text-foreground transition-colors"
                 >
                   <X className="size-4" />
                 </button>
@@ -478,7 +479,7 @@ export default function SessionPage() {
                 type="button"
                 onClick={() => setDrawerOpen(false)}
                 aria-label="Close network logs"
-                className="text-muted-foreground hover:text-foreground transition-colors"
+                className="cursor-pointer text-muted-foreground hover:text-foreground transition-colors"
               >
                 <X className="size-3.5" />
               </button>
@@ -515,25 +516,35 @@ export default function SessionPage() {
                         <td className="px-2 py-1">
                           <MethodBadge method={e.method} />
                         </td>
-                        <td className="px-2 py-1 truncate max-w-[220px] text-foreground" title={e.host}>
-                          {e.host}
+                        <td className="px-2 py-1 truncate max-w-[220px] text-foreground">
+                          <Tooltip>
+                            <TooltipTrigger asChild><span className="truncate inline-block max-w-full">{e.host}</span></TooltipTrigger>
+                            <TooltipContent>{e.host}</TooltipContent>
+                          </Tooltip>
                         </td>
-                        <td className="px-2 py-1 text-muted-foreground truncate max-w-xs" title={e.url}>
-                          {e.url}
+                        <td className="px-2 py-1 text-muted-foreground truncate max-w-xs">
+                          <Tooltip>
+                            <TooltipTrigger asChild><span className="truncate inline-block max-w-full">{e.url}</span></TooltipTrigger>
+                            <TooltipContent className="max-w-md break-all">{e.url}</TooltipContent>
+                          </Tooltip>
                         </td>
                         <td className="px-2 py-1 text-right">
-                          <button
-                            onClick={() => toggleFlag(e)}
-                            title={e.flagged ? "Remove flag" : "Flag for review"}
-                            className={cn(
-                              "rounded p-0.5 transition-colors",
-                              e.flagged
-                                ? "text-amber-500 hover:text-amber-600"
-                                : "text-muted-foreground/30 hover:text-amber-400"
-                            )}
-                          >
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <button
+                                onClick={() => toggleFlag(e)}
+                                className={cn(
+                                  "cursor-pointer rounded p-0.5 transition-colors",
+                                  e.flagged
+                                    ? "text-amber-500 hover:text-amber-600"
+                                    : "text-muted-foreground/30 hover:text-amber-400"
+                                )}
+                              >
                             <Flag className="size-3" />
                           </button>
+                            </TooltipTrigger>
+                            <TooltipContent>{e.flagged ? "Remove flag" : "Flag for review"}</TooltipContent>
+                          </Tooltip>
                         </td>
                       </tr>
                     ))}

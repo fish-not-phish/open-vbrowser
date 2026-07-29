@@ -23,6 +23,7 @@ from users.auth import session_mfa_auth
 from users.models import SiteSettings
 from workspaces.api import _get_ws_for_user
 from workspaces.models import Workspace
+from workspaces.permissions import require_role
 from audit.services import log_audit
 from .schemas import FileEntry, FileListOut, HashOut, MkdirIn, UploadOut
 
@@ -215,6 +216,7 @@ def upload_file(
     """Upload a file to the given path within the workspace storage."""
     ws = _get_ws_for_user(ws_uuid, request.auth)
     _check_storage(ws)
+    require_role(ws, request.auth, 'member')
     subpath = _sanitize_subpath(path)
 
     if file.size and file.size > MAX_UPLOAD_BYTES:
@@ -236,7 +238,10 @@ def upload_file(
 
     client = _s3_client()
     try:
-        client.upload_fileobj(file, _bucket(), key, Metadata={'sha256': sha256})
+        client.upload_fileobj(
+            file, _bucket(), key,
+            ExtraArgs={'Metadata': {'sha256': sha256}},
+        )
     except Exception:
         logger.exception("S3 upload failed for workspace %s key %s", ws.uuid, key)
         raise HttpError(500, "Failed to upload file")
@@ -252,6 +257,7 @@ def delete_file(request: HttpRequest, ws_uuid: UUID, path: str = ""):
     """Delete a file or folder (recursively) from workspace storage."""
     ws = _get_ws_for_user(ws_uuid, request.auth)
     _check_storage(ws)
+    require_role(ws, request.auth, 'member')
     subpath = _sanitize_subpath(path)
     if not subpath:
         raise HttpError(400, "Path is required")
@@ -289,6 +295,7 @@ def make_dir(request: HttpRequest, ws_uuid: UUID, payload: MkdirIn):
     """Create a folder (S3 placeholder object) in the workspace storage."""
     ws = _get_ws_for_user(ws_uuid, request.auth)
     _check_storage(ws)
+    require_role(ws, request.auth, 'member')
     subpath = _sanitize_subpath(payload.path)
     if not subpath:
         raise HttpError(400, "Folder path is required")
@@ -351,7 +358,6 @@ def download_protected(request: HttpRequest, ws_uuid: UUID, path: str = ""):
     """
     ws = _get_ws_for_user(ws_uuid, request.auth)
     _check_storage(ws)
-    _check_file_protection(ws)
     subpath = _sanitize_subpath(path)
     if not subpath:
         raise HttpError(400, "File path is required")
@@ -370,7 +376,9 @@ def download_protected(request: HttpRequest, ws_uuid: UUID, path: str = ""):
         client.download_file(_bucket(), key, file_path)
 
         import py7zr
-        with py7zr.SevenZipFile(archive_path, 'w', password='infected') as archive:
+        with py7zr.SevenZipFile(
+            archive_path, 'w', password='infected', filters=[{'id': py7zr.FILTER_COPY}]
+        ) as archive:
             archive.write(file_path, arcname=filename)
 
         with open(archive_path, 'rb') as f:

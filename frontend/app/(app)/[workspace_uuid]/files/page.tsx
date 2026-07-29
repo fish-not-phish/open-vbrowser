@@ -2,7 +2,7 @@
 
 import React from "react";
 import { useParams } from "next/navigation";
-import { filesApi, type FileEntry } from "@/lib/api";
+import { filesApi, type FileEntry, roleAtLeast } from "@/lib/api";
 import { useAuthContext } from "@/store/AuthContext";
 import { useWorkspace } from "@/store/WorkspaceContext";
 import { Button } from "@/components/ui/button";
@@ -17,12 +17,13 @@ import {
 import { toast } from "sonner";
 import { format } from "date-fns";
 import {
-  Folder, File as FileIcon, Download, Trash2, Upload, FolderPlus,
+  Folder, File as FileIcon, Trash2, Upload, FolderPlus,
   ChevronRight, Home, MoreHorizontal, Shield, Hash, Loader2,
 } from "lucide-react";
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -44,6 +45,7 @@ export default function FilesPage() {
   const { workspace_uuid } = useParams<{ workspace_uuid: string }>();
   const { user } = useAuthContext();
   const { activeWorkspace } = useWorkspace();
+  const canManageFiles = roleAtLeast(activeWorkspace?.role, "member");
 
   const [entries, setEntries] = React.useState<FileEntry[]>([]);
   const [currentPath, setCurrentPath] = React.useState("");
@@ -111,29 +113,10 @@ export default function FilesPage() {
 
   async function handleDownload(entry: FileEntry) {
     const fullPath = currentPath ? `${currentPath}/${entry.name}` : entry.name;
-    try {
-      const res = await filesApi.download(workspace_uuid, fullPath);
-      if (!res.ok) throw new Error("Download failed");
-      const blob = await res.blob();
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = entry.name;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
-    } catch {
-      toast.error(`Failed to download ${entry.name}`);
-    }
-  }
-
-  async function handleDownloadProtected(entry: FileEntry) {
-    const fullPath = currentPath ? `${currentPath}/${entry.name}` : entry.name;
     setProtecting(fullPath);
     try {
       const res = await filesApi.downloadProtected(workspace_uuid, fullPath);
-      if (!res.ok) throw new Error("Protected download failed");
+      if (!res.ok) throw new Error("Download failed");
       const blob = await res.blob();
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
@@ -143,9 +126,8 @@ export default function FilesPage() {
       a.click();
       document.body.removeChild(a);
       URL.revokeObjectURL(url);
-      toast.success(`Downloaded ${entry.name}-PROTECTED.7z`);
     } catch {
-      toast.error(`Failed to create protected archive for ${entry.name}`);
+      toast.error(`Failed to download ${entry.name}`);
     } finally {
       setProtecting(null);
     }
@@ -213,29 +195,33 @@ export default function FilesPage() {
           </p>
         </div>
         <div className="flex items-center gap-2">
-          <input
-            ref={fileInputRef}
-            type="file"
-            className="hidden"
-            onChange={onFileInputChange}
-          />
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => fileInputRef.current?.click()}
-            disabled={uploading}
-          >
-            <Upload className="size-4 mr-1.5" />
-            {uploading ? "Uploading…" : "Upload"}
-          </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => setMkdirOpen(true)}
-          >
-            <FolderPlus className="size-4 mr-1.5" />
-            New Folder
-          </Button>
+          {canManageFiles && (
+            <>
+              <input
+                ref={fileInputRef}
+                type="file"
+                className="hidden"
+                onChange={onFileInputChange}
+              />
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => fileInputRef.current?.click()}
+                disabled={uploading}
+              >
+                <Upload className="size-4 mr-1.5" />
+                {uploading ? "Uploading…" : "Upload"}
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setMkdirOpen(true)}
+              >
+                <FolderPlus className="size-4 mr-1.5" />
+                New Folder
+              </Button>
+            </>
+          )}
         </div>
       </div>
 
@@ -243,7 +229,7 @@ export default function FilesPage() {
       <div className="flex items-center gap-1 text-sm text-muted-foreground">
         <button
           onClick={() => navigateTo("")}
-          className="hover:text-foreground transition-colors flex items-center"
+          className="cursor-pointer hover:text-foreground transition-colors flex items-center"
         >
           <Home className="size-3.5" />
         </button>
@@ -252,7 +238,7 @@ export default function FilesPage() {
             <ChevronRight className="size-3.5" />
             <button
               onClick={() => navigateToBreadcrumb(i)}
-              className="hover:text-foreground transition-colors"
+              className="cursor-pointer hover:text-foreground transition-colors"
             >
               {part}
             </button>
@@ -317,9 +303,14 @@ export default function FilesPage() {
                       {entry.is_dir ? (
                         "—"
                       ) : entry.sha256 ? (
-                        <span title={entry.sha256} className="cursor-help">
-                          {entry.sha256.slice(0, 8)}…
-                        </span>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <span className="cursor-help">
+                              {entry.sha256.slice(0, 8)}…
+                            </span>
+                          </TooltipTrigger>
+                          <TooltipContent className="font-mono">{entry.sha256}</TooltipContent>
+                        </Tooltip>
                       ) : hashing === fullPath ? (
                         <span className="inline-flex items-center gap-1">
                           <Loader2 className="size-3 animate-spin" />
@@ -328,7 +319,7 @@ export default function FilesPage() {
                       ) : (
                         <button
                           onClick={() => handleComputeHash(entry)}
-                          className="text-primary hover:underline inline-flex items-center gap-1"
+                          className="cursor-pointer text-primary hover:underline inline-flex items-center gap-1"
                         >
                           <Hash className="size-3" />
                           Compute
@@ -336,6 +327,7 @@ export default function FilesPage() {
                       )}
                     </TableCell>
                     <TableCell>
+                      {(!entry.is_dir || canManageFiles) && (
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
                           <Button
@@ -348,18 +340,12 @@ export default function FilesPage() {
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
                           {!entry.is_dir && (
-                            <DropdownMenuItem onClick={() => handleDownload(entry)}>
-                              <Download className="size-4 mr-2" />
-                              Download
-                            </DropdownMenuItem>
-                          )}
-                          {!entry.is_dir && activeWorkspace?.enable_file_protection && (
                             <DropdownMenuItem
-                              onClick={() => handleDownloadProtected(entry)}
+                              onClick={() => handleDownload(entry)}
                               disabled={protecting === fullPath}
                             >
                               <Shield className="size-4 mr-2" />
-                              {protecting === fullPath ? "Archiving…" : "Download Protected (7z)"}
+                              {protecting === fullPath ? "Archiving…" : "Download"}
                             </DropdownMenuItem>
                           )}
                           {!entry.is_dir && entry.sha256 && (
@@ -373,17 +359,22 @@ export default function FilesPage() {
                               Copy SHA-256
                             </DropdownMenuItem>
                           )}
-                          <DropdownMenuSeparator />
-                          <DropdownMenuItem
-                            onClick={() => handleDelete(entry)}
-                            disabled={deleting === fullPath}
-                            className="text-destructive focus:text-destructive"
-                          >
-                            <Trash2 className="size-4 mr-2" />
-                            {deleting === fullPath ? "Deleting…" : "Delete"}
-                          </DropdownMenuItem>
+                          {canManageFiles && (
+                            <>
+                              <DropdownMenuSeparator />
+                              <DropdownMenuItem
+                                onClick={() => handleDelete(entry)}
+                                disabled={deleting === fullPath}
+                                className="text-destructive focus:text-destructive"
+                              >
+                                <Trash2 className="size-4 mr-2" />
+                                {deleting === fullPath ? "Deleting…" : "Delete"}
+                              </DropdownMenuItem>
+                            </>
+                          )}
                         </DropdownMenuContent>
                       </DropdownMenu>
+                      )}
                     </TableCell>
                   </TableRow>
                 );

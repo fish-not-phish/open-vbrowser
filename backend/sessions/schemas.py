@@ -89,6 +89,15 @@ class TrafficEventOut(Schema):
     flagged: bool = False
 
 
+class IOCOut(Schema):
+    host: str
+    is_ip: bool
+    event_count: int
+    first_seen: datetime
+    last_seen: datetime
+    flagged_count: int = 0
+
+
 
 class NoteCreateIn(Schema):
     body: str

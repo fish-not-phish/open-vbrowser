@@ -160,6 +160,8 @@ function RoleBadge({ role }: { role: string }) {
     owner: "bg-amber-500/10 text-amber-600 border-amber-500/20",
     admin: "bg-blue-500/10 text-blue-600 border-blue-500/20",
     member: "bg-muted text-muted-foreground",
+    analyst: "bg-purple-500/10 text-purple-600 border-purple-500/20",
+    viewer: "bg-gray-500/10 text-gray-600 border-gray-500/20",
   };
   return (
     <Badge variant="outline" className={cn("text-xs capitalize", colors[role] ?? colors.member)}>

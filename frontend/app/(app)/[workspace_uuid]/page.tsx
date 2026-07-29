@@ -4,12 +4,13 @@ import React from "react";
 import { useParams, useRouter } from "next/navigation";
 import { useAuthContext } from "@/store/AuthContext";
 import { useWorkspace } from "@/store/WorkspaceContext";
-import { browsersApi, sessionsApi, type Browser } from "@/lib/api";
+import { browsersApi, sessionsApi, type Browser, roleAtLeast } from "@/lib/api";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip";
 import { toast } from "sonner";
 import Image from "next/image";
 import { Globe, ShieldCheck, MessageSquare, Network, LayoutGrid, Loader2, Search, Zap, X, TriangleAlert, Activity, Lock, Info, Terminal, Wrench, HardDrive } from "lucide-react";
@@ -52,13 +53,14 @@ const cardVariants = {
 
 // ─── App card ─────────────────────────────────────────────────────────────────
 
-function AppCard({ browser, launching, onLaunch }: {
+function AppCard({ browser, launching, onLaunch, canLaunch }: {
   browser: Browser;
   launching: string | null;
   onLaunch: (b: Browser) => void;
+  canLaunch: boolean;
 }) {
   const isLaunching = launching === browser.slug;
-  const isDisabled = !!launching;
+  const isDisabled = !!launching || !canLaunch;
   const meta = CATEGORY_META[browser.category];
 
   return (
@@ -71,7 +73,7 @@ function AppCard({ browser, launching, onLaunch }: {
       disabled={isDisabled}
       className={cn(
         "group relative flex flex-col items-center gap-3 rounded-2xl border bg-card p-4 text-left",
-        "transition-colors duration-150",
+        "transition-colors duration-150 cursor-pointer",
         "hover:border-primary/40 hover:bg-accent/30 hover:shadow-lg hover:shadow-black/5",
         "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
         "disabled:cursor-not-allowed disabled:opacity-50",
@@ -296,7 +298,7 @@ export default function HomePage() {
                 animate={{ opacity: 1, scale: 1 }}
                 exit={{ opacity: 0, scale: 0.8 }}
                 onClick={() => setSearch("")}
-                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                className="absolute right-2.5 top-1/2 -translate-y-1/2 cursor-pointer text-muted-foreground hover:text-foreground transition-colors"
               >
                 <X className="size-3.5" />
               </motion.button>
@@ -336,9 +338,13 @@ export default function HomePage() {
                 <Label
                   htmlFor="network-logging-toggle"
                   className="cursor-pointer flex items-center gap-1.5 text-sm select-none"
-                   title="Captures domain, HTTP method, and full URL for supported browsers. Not available for Kali, Telegram, or Tor."
                 >
-                  <Activity className={cn("size-3.5 transition-colors", networkLogging ? "text-blue-500" : "text-muted-foreground")} />
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Activity className={cn("size-3.5 transition-colors", networkLogging ? "text-blue-500" : "text-muted-foreground")} />
+                    </TooltipTrigger>
+                    <TooltipContent className="max-w-xs">Captures domain, HTTP method, and full URL for supported browsers. Not available for Kali, Telegram, or Tor.</TooltipContent>
+                  </Tooltip>
                   Network logging
                 </Label>
               </div>
@@ -356,9 +362,13 @@ export default function HomePage() {
                 <Label
                   htmlFor="file-protection-toggle"
                   className="cursor-pointer flex items-center gap-1.5 text-sm select-none"
-                  title="All downloaded files are 7z-encrypted and password-protected. Increases resource usage and adds latency to downloads."
                 >
-                  <Lock className={cn("size-3.5 transition-colors", fileProtection ? "text-green-500" : "text-muted-foreground")} />
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Lock className={cn("size-3.5 transition-colors", fileProtection ? "text-green-500" : "text-muted-foreground")} />
+                    </TooltipTrigger>
+                    <TooltipContent className="max-w-xs">All downloaded files are 7z-encrypted and password-protected. Increases resource usage and adds latency to downloads.</TooltipContent>
+                  </Tooltip>
                   File protection
                 </Label>
               </div>
@@ -374,9 +384,13 @@ export default function HomePage() {
                 <Label
                   htmlFor="persistent-storage-toggle"
                   className="cursor-pointer flex items-center gap-1.5 text-sm select-none"
-                  title="Mounts per-workspace S3 storage at /config/Downloads. Files persist across sessions."
                 >
-                  <HardDrive className={cn("size-3.5 transition-colors", persistentStorage ? "text-purple-500" : "text-muted-foreground")} />
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <HardDrive className={cn("size-3.5 transition-colors", persistentStorage ? "text-purple-500" : "text-muted-foreground")} />
+                    </TooltipTrigger>
+                    <TooltipContent className="max-w-xs">Mounts per-workspace S3 storage at /config/Downloads. Files persist across sessions.</TooltipContent>
+                  </Tooltip>
                   Persistent storage
                 </Label>
               </div>
@@ -426,7 +440,7 @@ export default function HomePage() {
               key={cat}
               onClick={() => setSelectedCategory(cat)}
               className={cn(
-                "relative inline-flex items-center gap-1.5 rounded-xl px-3 py-1.5 text-sm font-medium transition-colors duration-150",
+                "relative inline-flex items-center gap-1.5 rounded-xl px-3 py-1.5 text-sm font-medium cursor-pointer transition-colors duration-150",
                 isActive
                   ? "bg-primary text-primary-foreground shadow-sm"
                   : "bg-muted/60 text-muted-foreground hover:bg-muted hover:text-foreground"
@@ -470,7 +484,7 @@ export default function HomePage() {
           </div>
           <p className="text-sm font-medium text-muted-foreground">No applications found</p>
           {search && (
-            <button onClick={() => setSearch("")} className="text-xs text-primary hover:underline">
+            <button onClick={() => setSearch("")} className="cursor-pointer text-xs text-primary hover:underline">
               Clear search
             </button>
           )}
@@ -489,6 +503,7 @@ export default function HomePage() {
                 browser={browser}
                 launching={launching}
                 onLaunch={launchSession}
+                canLaunch={roleAtLeast(activeWorkspace?.role, "analyst")}
               />
             ))}
           </AnimatePresence>

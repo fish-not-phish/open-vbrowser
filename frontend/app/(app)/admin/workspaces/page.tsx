@@ -82,7 +82,7 @@ function displayName(m: AdminWorkspaceMember) {
   return full || m.email;
 }
 
-const ROLES = ["member", "admin", "owner"] as const;
+const ROLES = ["viewer", "analyst", "member", "admin", "owner"] as const;
 type Role = (typeof ROLES)[number];
 
 const roleBadge: Record<Role, { label: string; icon: React.ReactNode; className: string }> = {
@@ -100,6 +100,16 @@ const roleBadge: Record<Role, { label: string; icon: React.ReactNode; className:
     label: "Member",
     icon: null,
     className: "ring-zinc-500/30 text-zinc-600 dark:text-zinc-400 bg-zinc-100 dark:bg-zinc-500/10",
+  },
+  analyst: {
+    label: "Analyst",
+    icon: null,
+    className: "ring-purple-500/30 text-purple-600 dark:text-purple-400 bg-purple-50 dark:bg-purple-500/10",
+  },
+  viewer: {
+    label: "Viewer",
+    icon: null,
+    className: "ring-gray-500/30 text-gray-600 dark:text-gray-400 bg-gray-100 dark:bg-gray-500/10",
   },
 };
 
@@ -247,10 +257,12 @@ function AddMemberForm({
         </Popover>
 
         <Select value={role} onValueChange={(v) => setRole(v as Role)} disabled={adding}>
-          <SelectTrigger className="h-8 w-[100px] text-xs">
+          <SelectTrigger className="h-8 w-[130px] text-xs">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
+            <SelectItem value="viewer">Viewer</SelectItem>
+            <SelectItem value="analyst">Analyst</SelectItem>
             <SelectItem value="member">Member</SelectItem>
             <SelectItem value="admin">Admin</SelectItem>
             <SelectItem value="owner">Owner</SelectItem>
@@ -388,7 +400,7 @@ function MemberPanel({
                     onValueChange={(v) => changeRole(m, v as Role)}
                     disabled={changingRole === m.user_id}
                   >
-                    <SelectTrigger className="h-7 w-[110px] text-xs border-none bg-transparent shadow-none hover:bg-muted focus:ring-0">
+                    <SelectTrigger className="h-7 w-[130px] text-xs border-none bg-transparent shadow-none hover:bg-muted focus:ring-0">
                       <SelectValue>
                         <span className={cn(badgeClass, rb.className)}>
                           {rb.icon}{rb.label}
@@ -396,6 +408,8 @@ function MemberPanel({
                       </SelectValue>
                     </SelectTrigger>
                     <SelectContent>
+                      <SelectItem value="viewer">Viewer</SelectItem>
+                      <SelectItem value="analyst">Analyst</SelectItem>
                       <SelectItem value="member">Member</SelectItem>
                       <SelectItem value="admin">Admin</SelectItem>
                       <SelectItem value="owner">Owner</SelectItem>
@@ -501,7 +515,7 @@ export default function AdminWorkspacesPage() {
                 className="pl-8 h-8 text-sm"
               />
               {search && (
-                <button onClick={() => setSearch("")} className="absolute right-2.5 top-2.5 text-muted-foreground hover:text-foreground">
+                <button onClick={() => setSearch("")} className="absolute right-2.5 top-2.5 cursor-pointer text-muted-foreground hover:text-foreground">
                   <X className="size-3.5" />
                 </button>
               )}

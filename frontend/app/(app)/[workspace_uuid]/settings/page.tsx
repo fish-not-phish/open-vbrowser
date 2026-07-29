@@ -28,7 +28,7 @@ import {
 import { toast } from "sonner";
 import { AnimatePresence, motion } from "motion/react";
 import {
-  Activity, CheckCircle2, Crown, HardDrive, ImageIcon, Loader2, Lock, LogOut,
+  Activity, CheckCircle2, ChevronDown, Crown, HardDrive, ImageIcon, Info, Loader2, Lock, LogOut,
   RotateCcw, Save, Trash2, TrashIcon,
   UploadCloudIcon, UserMinusIcon, UserPlus, UsersIcon, X,
 } from "lucide-react";
@@ -179,7 +179,7 @@ function MemberSearch({
               <span className="font-medium truncate block">{displayName}</span>
             </div>
             <span className="text-xs text-muted-foreground truncate">{selected.email}</span>
-            <button onClick={clear} className="shrink-0 text-muted-foreground hover:text-foreground">
+            <button onClick={clear} className="shrink-0 cursor-pointer text-muted-foreground hover:text-foreground">
               <X className="size-3.5" />
             </button>
           </div>
@@ -216,7 +216,7 @@ function MemberSearch({
                 return (
                   <button
                     key={u.id}
-                    className="w-full flex items-center gap-3 px-3 py-2.5 text-left hover:bg-accent transition-colors"
+                    className="w-full flex items-center gap-3 px-3 py-2.5 text-left cursor-pointer hover:bg-accent transition-colors"
                     onMouseDown={(e) => { e.preventDefault(); selectUser(u); }}
                   >
                     <Avatar className="size-7 shrink-0">
@@ -242,6 +242,8 @@ function MemberSearch({
           <SelectValue />
         </SelectTrigger>
         <SelectContent>
+          <SelectItem value="viewer">Viewer</SelectItem>
+          <SelectItem value="analyst">Analyst</SelectItem>
           <SelectItem value="member">Member</SelectItem>
           <SelectItem value="admin">Admin</SelectItem>
           {isOwner && <SelectItem value="owner">Owner</SelectItem>}
@@ -258,6 +260,53 @@ function MemberSearch({
         {adding ? <Loader2 className="size-3 animate-spin" /> : <UserPlus className="size-3" />}
         {adding ? "Adding…" : "Add"}
       </Button>
+    </div>
+  );
+}
+
+// ─── Role legend ──────────────────────────────────────────────────────────────
+
+const ROLE_DESCRIPTIONS: { role: string; label: string; description: string }[] = [
+  { role: "owner", label: "Owner", description: "Full control — settings, members, delete workspace" },
+  { role: "admin", label: "Admin", description: "Settings, member management, file storage writes" },
+  { role: "member", label: "Member", description: "S3 storage writes (upload/delete), sessions, cases" },
+  { role: "analyst", label: "Analyst", description: "Launch sessions, create/edit cases, upload to cases" },
+  { role: "viewer", label: "Viewer", description: "Read-only — browse files, download, view cases" },
+];
+
+function RoleLegend() {
+  const [open, setOpen] = React.useState(false);
+  return (
+    <div className="border-b">
+      <button
+        type="button"
+        onClick={() => setOpen((o) => !o)}
+        className="flex w-full items-center gap-2 px-4 py-2 text-xs text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
+      >
+        <Info className="size-3" />
+        <span>Role permissions</span>
+        <ChevronDown className={cn("size-3 ml-auto transition-transform", open && "rotate-180")} />
+      </button>
+      <AnimatePresence>
+        {open && (
+          <motion.div
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: "auto", opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            transition={{ duration: 0.2 }}
+            className="overflow-hidden"
+          >
+            <div className="px-4 pb-3 space-y-1.5">
+              {ROLE_DESCRIPTIONS.map(({ label, description }) => (
+                <div key={label} className="flex items-start gap-2 text-xs">
+                  <span className="font-medium text-foreground w-14 shrink-0">{label}</span>
+                  <span className="text-muted-foreground">{description}</span>
+                </div>
+              ))}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
@@ -961,7 +1010,10 @@ export default function WorkspaceSettingsPage() {
                   <span className="tabular-nums">{members.length}</span>{" "}
                   member{members.length !== 1 ? "s" : ""}
                 </span>
-              </div>
+               </div>
+
+              {/* Role legend */}
+              <RoleLegend />
 
               <div>
                 {membersLoading ? (
@@ -1028,6 +1080,8 @@ export default function WorkspaceSettingsPage() {
                                 <SelectItem value="owner" disabled={!isOwner}>Owner</SelectItem>
                                 <SelectItem value="admin">Admin</SelectItem>
                                 <SelectItem value="member">Member</SelectItem>
+                                <SelectItem value="analyst">Analyst</SelectItem>
+                                <SelectItem value="viewer">Viewer</SelectItem>
                               </SelectContent>
                             </Select>
                           ) : !isSelf ? (

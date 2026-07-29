@@ -28,7 +28,7 @@ services:
   ovb_backend:
     build: ../backend
     container_name: ovb_backend
-    command: ["--migrate", "gunicorn", "backend.wsgi:application", "--bind", "0.0.0.0:8000", "--workers", "4"]
+    command: ["--migrate", "gunicorn", "backend.wsgi:application", "--bind", "0.0.0.0:8000", "--workers", "4", "--worker-class", "gthread", "--threads", "4"]
     restart: unless-stopped
     depends_on:
       ovb_postgres:

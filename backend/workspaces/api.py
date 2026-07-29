@@ -3,11 +3,13 @@ from ninja import Router, Schema, File
 from ninja.files import UploadedFile
 from django.http import HttpRequest
 from django.core.files.storage import default_storage
+from django.conf import settings as django_settings
 from ninja.errors import HttpError
 from django.contrib.auth.models import User
 from users.auth import session_mfa_auth, admin_session_auth
 from audit.services import log_audit
 from .models import Workspace, WorkspaceMembership
+from .permissions import ALL_ROLES, role_at_least
 from uuid import UUID
 from typing import List, Optional
 from .schemas import (
@@ -114,6 +116,12 @@ def _ws_out(ws: Workspace, user, request: HttpRequest = None) -> dict:
         "enable_network_logging": ws.enable_network_logging,
         "enable_file_protection": ws.enable_file_protection,
         "enable_persistent_storage": ws.enable_persistent_storage,
+        "storage_ready": (
+            ws.enable_persistent_storage
+            and not getattr(django_settings, 'DEV_MODE', False)
+            and bool(getattr(django_settings, 'S3FILES_BUCKET_NAME', ''))
+            and bool(ws.s3files_access_point_arn)
+        ),
     }
 
 
@@ -349,6 +357,13 @@ def invite_member(request: HttpRequest, ws_uuid: UUID, payload: MemberInviteIn):
     if membership.role not in ('owner', 'admin'):
         raise HttpError(403, "Only owners or admins can invite members")
 
+    invited_role = payload.role or 'member'
+    if invited_role not in ALL_ROLES:
+        raise HttpError(400, f"Invalid role. Must be one of: {', '.join(ALL_ROLES)}")
+    # Admins cannot invite owners
+    if membership.role == 'admin' and invited_role == 'owner':
+        raise HttpError(403, "Admins cannot invite owners")
+
     try:
         user = User.objects.get(email=payload.email)
     except User.DoesNotExist:
@@ -356,7 +371,7 @@ def invite_member(request: HttpRequest, ws_uuid: UUID, payload: MemberInviteIn):
 
     m, created = WorkspaceMembership.objects.get_or_create(
         workspace=ws, user=user,
-        defaults={'role': payload.role or 'member'}
+        defaults={'role': invited_role}
     )
     if not created:
         raise HttpError(409, "User is already a member")
@@ -408,12 +423,15 @@ def change_member_role(request: HttpRequest, ws_uuid: UUID, user_id: int, payloa
     if caller_membership.role not in ('owner', 'admin'):
         raise HttpError(403, "Only owners or admins can change roles")
 
+    if payload.role not in ALL_ROLES:
+        raise HttpError(400, f"Invalid role. Must be one of: {', '.join(ALL_ROLES)}")
+
     try:
         m = ws.memberships.select_related('user').get(user_id=user_id)
     except WorkspaceMembership.DoesNotExist:
         raise HttpError(404, "Member not found")
 
-    # Admins can only assign member/admin, not owner; cannot change an owner's role
+    # Admins can only assign member/admin/analyst/viewer, not owner; cannot change an owner's role
     if caller_membership.role == 'admin':
         if m.role == 'owner':
             raise HttpError(403, "Admins cannot change an owner's role")

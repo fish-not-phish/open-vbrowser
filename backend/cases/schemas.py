@@ -79,3 +79,35 @@ class CaseAttachmentOut(Schema):
     uploaded_by_email: Optional[str] = None
     created_at: datetime
     url: str
+
+
+class CaseFileLinkCreateIn(Schema):
+    path: str
+
+
+class CaseFileLinkOut(Schema):
+    uuid: UUID
+    s3_path: str
+    filename: str
+    size_bytes: int
+    sha256: Optional[str] = None
+    linked_by_id: Optional[int] = None
+    linked_by_email: Optional[str] = None
+    created_at: datetime
+    exists: bool = True
+
+
+class CaseFileOut(Schema):
+    """Unified view of a file on a case — either an uploaded attachment or a
+    linked workspace (S3) file. The `source` field distinguishes the two."""
+    uuid: UUID
+    source: str  # "upload" | "workspace"
+    filename: str
+    content_type: str = ""
+    size_bytes: int = 0
+    uploaded_by_id: Optional[int] = None
+    uploaded_by_email: Optional[str] = None
+    created_at: datetime
+    url: Optional[str] = None
+    s3_path: Optional[str] = None
+    exists: bool = True

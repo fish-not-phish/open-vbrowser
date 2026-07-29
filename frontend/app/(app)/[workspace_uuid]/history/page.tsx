@@ -15,6 +15,7 @@ import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from "@/components/ui/table";
 import { Separator } from "@/components/ui/separator";
+import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { CalendarIcon, Search, X, ChevronLeft, ChevronRight, Clock, Zap, Tag, FolderOpen, History, StickyNote, Activity } from "lucide-react";
@@ -73,7 +74,7 @@ function DateRangePicker({
             <span
               role="button"
               onClick={(e) => { e.stopPropagation(); onChange(undefined); }}
-              className="ml-1 rounded-full hover:bg-muted p-0.5 -mr-1"
+              className="ml-1 cursor-pointer rounded-full hover:bg-muted p-0.5 -mr-1"
             >
               <X className="size-3" />
             </span>
@@ -189,7 +190,7 @@ export default function HistoryPage() {
                 animate={{ opacity: 1, scale: 1 }}
                 exit={{ opacity: 0, scale: 0.8 }}
                 onClick={() => { setBrowser(""); setPage(1); }}
-                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                className="absolute right-2.5 top-1/2 -translate-y-1/2 cursor-pointer text-muted-foreground hover:text-foreground"
               >
                 <X className="size-3.5" />
               </motion.button>
@@ -292,7 +293,12 @@ export default function HistoryPage() {
                       <div className="flex items-center gap-2">
                         {s.type ?? "—"}
                         {s.active && (
-                          <span className="size-1.5 rounded-full bg-green-500 animate-pulse inline-block" title="Live" />
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <span className="size-1.5 rounded-full bg-green-500 animate-pulse inline-block" />
+                            </TooltipTrigger>
+                            <TooltipContent>Live</TooltipContent>
+                          </Tooltip>
                         )}
                       </div>
                     </TableCell>

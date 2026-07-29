@@ -202,7 +202,7 @@ function ScopeSelector({ scope, onSelect }: { scope: Scope; onSelect: (s: Scope)
           </div>
         </div>
         <div className="max-h-64 overflow-y-auto p-1">
-          <button className={cn("flex w-full items-center gap-2 rounded-sm px-2 py-1.5 text-xs hover:bg-accent transition-colors", scope.type === "global" && "bg-accent")} onClick={() => { onSelect({ type: "global" }); setOpen(false); setQuery(""); }}>
+          <button className={cn("flex w-full items-center gap-2 rounded-sm px-2 py-1.5 text-xs cursor-pointer hover:bg-accent transition-colors", scope.type === "global" && "bg-accent")} onClick={() => { onSelect({ type: "global" }); setOpen(false); setQuery(""); }}>
             <Activity className="size-3.5 text-muted-foreground" /><span>Global (all data)</span>
           </button>
           {!query.trim() && <p className="px-2 py-3 text-xs text-muted-foreground text-center">Type to search</p>}
@@ -212,7 +212,7 @@ function ScopeSelector({ scope, onSelect }: { scope: Scope; onSelect: (s: Scope)
             <>
               <p className="px-2 pt-2 pb-1 text-[10px] font-medium text-muted-foreground uppercase tracking-wide">Users</p>
               {results.users.map((u) => (
-                <button key={u.id} className={cn("flex w-full items-center gap-2 rounded-sm px-2 py-1.5 text-xs hover:bg-accent transition-colors", scope.type === "user" && scope.entity.id === u.id && "bg-accent")} onClick={() => { onSelect({ type: "user", entity: u }); setOpen(false); setQuery(""); }}>
+                <button key={u.id} className={cn("flex w-full items-center gap-2 rounded-sm px-2 py-1.5 text-xs cursor-pointer hover:bg-accent transition-colors", scope.type === "user" && scope.entity.id === u.id && "bg-accent")} onClick={() => { onSelect({ type: "user", entity: u }); setOpen(false); setQuery(""); }}>
                   <User className="size-3.5 text-muted-foreground shrink-0" />
                   <div className="text-left min-w-0"><p className="truncate">{u.name || u.email}</p>{u.name && <p className="text-[10px] text-muted-foreground truncate">{u.email}</p>}</div>
                 </button>
@@ -223,7 +223,7 @@ function ScopeSelector({ scope, onSelect }: { scope: Scope; onSelect: (s: Scope)
             <>
               <p className="px-2 pt-2 pb-1 text-[10px] font-medium text-muted-foreground uppercase tracking-wide">Workspaces</p>
               {results.workspaces.map((ws) => (
-                <button key={ws.uuid} className={cn("flex w-full items-center gap-2 rounded-sm px-2 py-1.5 text-xs hover:bg-accent transition-colors", scope.type === "workspace" && scope.entity.uuid === ws.uuid && "bg-accent")} onClick={() => { onSelect({ type: "workspace", entity: ws }); setOpen(false); setQuery(""); }}>
+                <button key={ws.uuid} className={cn("flex w-full items-center gap-2 rounded-sm px-2 py-1.5 text-xs cursor-pointer hover:bg-accent transition-colors", scope.type === "workspace" && scope.entity.uuid === ws.uuid && "bg-accent")} onClick={() => { onSelect({ type: "workspace", entity: ws }); setOpen(false); setQuery(""); }}>
                   <Building2 className="size-3.5 text-muted-foreground shrink-0" /><span className="truncate">{ws.name}</span>
                 </button>
               ))}
@@ -723,7 +723,7 @@ function SessionStatusChart({ data, loading }: { data: AdminAnalytics | null; lo
       <div className="flex flex-col gap-2">
         {pieData.map((item, i) => (
           <button key={item.key} type="button"
-            className={cn("flex items-center justify-between rounded-md px-1 py-0.5 transition-opacity", activeIndex !== null && activeIndex !== i && "opacity-40")}
+            className={cn("flex items-center justify-between rounded-md px-1 py-0.5 cursor-pointer transition-opacity", activeIndex !== null && activeIndex !== i && "opacity-40")}
             onPointerEnter={() => setActiveIndex(i)} onPointerLeave={() => setActiveIndex(null)}>
             <div className="flex items-center gap-2">
               <span className="size-2.5 rounded-full shrink-0" style={{ backgroundColor: sessionStatusColors[i] }} />
@@ -927,7 +927,7 @@ export default function AdminDashboardPage() {
           <Badge variant="secondary" className="gap-1.5 text-xs pr-1">
             {scope.type === "user" ? <User className="size-3" /> : <Building2 className="size-3" />}
             {scopeLabel}
-            <button className="ml-0.5 rounded-full hover:bg-muted-foreground/20 p-0.5" onClick={() => setScope({ type: "global" })}>
+            <button className="ml-0.5 cursor-pointer rounded-full hover:bg-muted-foreground/20 p-0.5" onClick={() => setScope({ type: "global" })}>
               <X className="size-2.5" />
             </button>
           </Badge>

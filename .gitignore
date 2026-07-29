@@ -49,6 +49,9 @@ coverage.xml
 .hypothesis/
 .pytest_cache/
 cover/
+DNS.md
+docker/docker-compose.existing-traefik.yml
+docker/docker-compose.traefik-redis.yml
 
 # Translations
 *.mo

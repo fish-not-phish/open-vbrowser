@@ -46,6 +46,7 @@ class WorkspaceOut(Schema):
     enable_network_logging: bool = False
     enable_file_protection: bool = False
     enable_persistent_storage: bool = False
+    storage_ready: bool = False
 
 
 class MemberInviteIn(Schema):
@@ -54,4 +55,4 @@ class MemberInviteIn(Schema):
 
 
 class MemberRoleIn(Schema):
-    role: str  # must be 'owner', 'admin', or 'member'
+    role: str  # must be 'owner', 'admin', 'member', 'analyst', or 'viewer'

@@ -2,7 +2,7 @@
 
 import React from "react";
 import { useParams, useRouter } from "next/navigation";
-import { casesApi, workspacesApi, type Case, type CaseSession, type CaseComment, type CaseAttachment, type WorkspaceMember } from "@/lib/api";
+import { casesApi, filesApi, workspacesApi, type Case, type CaseSession, type CaseComment, type CaseFile, type FileEntry, type WorkspaceMember, roleAtLeast } from "@/lib/api";
 import { useAuthContext } from "@/store/AuthContext";
 import { useWorkspace } from "@/store/WorkspaceContext";
 import { Button } from "@/components/ui/button";
@@ -12,12 +12,15 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip";
 import { toast } from "sonner";
 import { format, formatDistanceToNow } from "date-fns";
 import {
   ArrowLeft, Pencil, CheckCircle2, Circle, Archive, Activity,
-  MessageSquare, Paperclip, Upload, Trash2, Download,
+  MessageSquare, Paperclip, Upload, Trash2,
   File as FileIconGeneric, Send, Check, X, Monitor, DollarSign,
+  Folder, ChevronRight, Home, Plus, Link2, AlertTriangle, Cloud, Shield,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { motion } from "motion/react";
@@ -31,6 +34,7 @@ import { useCreateBlockNote, SuggestionMenuController, getDefaultReactSlashMenuI
 import { BlockNoteView } from "@blocknote/shadcn";
 import { filterSuggestionItems, BlockNoteSchema, defaultInlineContentSpecs } from "@blocknote/core";
 import { MentionInlineContent } from "@/lib/blocknote-mention";
+import { FileRefInlineContent } from "@/lib/blocknote-file-ref";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -82,6 +86,7 @@ const mentionSchema = BlockNoteSchema.create({
   inlineContentSpecs: {
     ...defaultInlineContentSpecs,
     mention: MentionInlineContent,
+    fileRef: FileRefInlineContent,
   },
 });
 
@@ -104,13 +109,14 @@ function BlockNoteRenderer({ body }: { body: string }) {
 
 // ─── BlockNote composer ───────────────────────────────────────────────────────
 
-function BlockNoteComposer({ onPost, onCancel, posting, initialBlocks, submitLabel = "Post", members = [] }: {
+function BlockNoteComposer({ onPost, onCancel, posting, initialBlocks, submitLabel = "Post", members = [], caseFiles = [] }: {
   onPost: (json: string) => Promise<void>;
   onCancel?: () => void;
   posting: boolean;
   initialBlocks?: any[];
   submitLabel?: string;
   members?: WorkspaceMember[];
+  caseFiles?: CaseFile[];
 }) {
   const editor = useCreateBlockNote({
     schema: mentionSchema,
@@ -122,7 +128,7 @@ function BlockNoteComposer({ onPost, onCancel, posting, initialBlocks, submitLab
     const hasContent = blocks.some((b) => {
       const c = (b as any).content;
       if (!Array.isArray(c)) return false;
-      return c.some((x: any) => x.text?.trim() || x.type === "mention");
+      return c.some((x: any) => x.text?.trim() || x.type === "mention" || x.type === "fileRef");
     });
     if (!hasContent) return;
     await onPost(JSON.stringify(blocks));
@@ -154,13 +160,26 @@ function BlockNoteComposer({ onPost, onCancel, posting, initialBlocks, submitLab
               return filtered.map((m) => ({
                 title: m.email,
                 onItemClick: () => {
-                  // Delete the "@query" text the user typed, then insert the chip
-                  editor._tiptapEditor.commands.deleteRange({
-                    from: editor._tiptapEditor.state.selection.from - query.length - 1,
-                    to: editor._tiptapEditor.state.selection.from,
-                  });
                   editor.insertInlineContent([
                     { type: "mention", props: { email: m.email } },
+                    { type: "text", text: " ", styles: {} },
+                  ]);
+                },
+              }));
+            }}
+          />
+          {/* # file reference menu */}
+          <SuggestionMenuController
+            triggerCharacter="#"
+            getItems={async (query) => {
+              const filtered = caseFiles.filter((f) =>
+                f.filename.toLowerCase().includes(query.toLowerCase())
+              );
+              return filtered.map((f) => ({
+                title: f.filename,
+                onItemClick: () => {
+                  editor.insertInlineContent([
+                    { type: "fileRef", props: { uuid: f.uuid, filename: f.filename, source: f.source } },
                     { type: "text", text: " ", styles: {} },
                   ]);
                 },
@@ -183,7 +202,7 @@ function BlockNoteComposer({ onPost, onCancel, posting, initialBlocks, submitLab
 
 // ─── Inline name editor ───────────────────────────────────────────────────────
 
-function InlineNameEditor({ value, onSave }: { value: string; onSave: (v: string) => Promise<void> }) {
+function InlineNameEditor({ value, onSave, readOnly }: { value: string; onSave: (v: string) => Promise<void>; readOnly?: boolean }) {
   const [editing, setEditing] = React.useState(false);
   const [draft, setDraft] = React.useState(value);
   const [saving, setSaving] = React.useState(false);
@@ -192,6 +211,10 @@ function InlineNameEditor({ value, onSave }: { value: string; onSave: (v: string
     if (!draft.trim() || draft === value) { setEditing(false); return; }
     setSaving(true);
     try { await onSave(draft.trim()); setEditing(false); } finally { setSaving(false); }
+  }
+
+  if (readOnly) {
+    return <h1 className="text-xl font-semibold tracking-tight">{value}</h1>;
   }
 
   if (editing) {
@@ -213,7 +236,7 @@ function InlineNameEditor({ value, onSave }: { value: string; onSave: (v: string
   return (
     <button
       onClick={() => { setDraft(value); setEditing(true); }}
-      className="text-xl font-semibold tracking-tight text-left hover:text-primary/80 transition-colors group flex items-center gap-2"
+      className="text-xl font-semibold tracking-tight text-left cursor-pointer hover:text-primary/80 transition-colors group flex items-center gap-2"
     >
       {value}
       <Pencil className="size-3.5 opacity-0 group-hover:opacity-40 transition-opacity" />
@@ -228,6 +251,7 @@ function CommentsTab({ caseUuid, workspaceUuid, currentUserId, csrfToken }: {
 }) {
   const [comments, setComments] = React.useState<CaseComment[]>([]);
   const [members, setMembers] = React.useState<WorkspaceMember[]>([]);
+  const [caseFiles, setCaseFiles] = React.useState<CaseFile[]>([]);
   const [loading, setLoading] = React.useState(true);
   const [posting, setPosting] = React.useState(false);
   const [editingUuid, setEditingUuid] = React.useState<string | null>(null);
@@ -241,7 +265,28 @@ function CommentsTab({ caseUuid, workspaceUuid, currentUserId, csrfToken }: {
     workspacesApi.listMembers(workspaceUuid)
       .then(setMembers)
       .catch(() => {});
+    casesApi.listFiles(caseUuid)
+      .then(setCaseFiles)
+      .catch(() => {});
   }, [caseUuid, workspaceUuid]);
+
+  async function downloadFile(uuid: string, source: string, filename: string) {
+    try {
+      const res = source === "upload"
+        ? await casesApi.downloadAttachment(caseUuid, uuid)
+        : await casesApi.downloadFileLink(caseUuid, uuid);
+      if (!res.ok) throw new Error("Download failed");
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `${filename}-PROTECTED.7z`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    } catch { toast.error(`Failed to download ${filename}`); }
+  }
 
   async function post(json: string) {
     if (!csrfToken) return;
@@ -328,9 +373,24 @@ function CommentsTab({ caseUuid, workspaceUuid, currentUserId, csrfToken }: {
                     initialBlocks={parseBlocks(c.body)}
                     submitLabel="Save"
                     members={members}
+                    caseFiles={caseFiles}
                   />
                 ) : (
-                  <div className="rounded-lg border border-border/40 bg-card/60 px-4 py-3">
+                  <div
+                    className="rounded-lg border border-border/40 bg-card/60 px-4 py-3"
+                    onClick={(e) => {
+                      const target = e.target as HTMLElement;
+                      const chip = target.closest("[data-file-ref-uuid]");
+                      if (chip) {
+                        e.preventDefault();
+                        downloadFile(
+                          chip.getAttribute("data-file-ref-uuid")!,
+                          chip.getAttribute("data-file-ref-source")!,
+                          chip.textContent?.replace(/^#/, "") ?? "file",
+                        );
+                      }
+                    }}
+                  >
                     <BlockNoteRenderer body={c.body} />
                   </div>
                 )}
@@ -343,7 +403,7 @@ function CommentsTab({ caseUuid, workspaceUuid, currentUserId, csrfToken }: {
       {/* Compose */}
       <div className="border-t border-border/40 pt-6">
         <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-3">Add a comment</p>
-        <BlockNoteComposer key={composerKey} onPost={post} posting={posting} members={members} />
+        <BlockNoteComposer key={composerKey} onPost={post} posting={posting} members={members} caseFiles={caseFiles} />
       </div>
     </div>
   );
@@ -351,28 +411,33 @@ function CommentsTab({ caseUuid, workspaceUuid, currentUserId, csrfToken }: {
 
 // ─── Attachments tab ──────────────────────────────────────────────────────────
 
-function AttachmentsTab({ caseUuid, currentUserId, csrfToken }: {
-  caseUuid: string; currentUserId: number | null; csrfToken: string | null;
+function FilesTab({ caseUuid, workspaceUuid, currentUserId, csrfToken, storageEnabled, canManage }: {
+  caseUuid: string; workspaceUuid: string; currentUserId: number | null; csrfToken: string | null; storageEnabled: boolean; canManage: boolean;
 }) {
-  const [attachments, setAttachments] = React.useState<CaseAttachment[]>([]);
+  const [files, setFiles] = React.useState<CaseFile[]>([]);
   const [loading, setLoading] = React.useState(true);
   const [uploading, setUploading] = React.useState(false);
+  const [pickerOpen, setPickerOpen] = React.useState(false);
+  const [linking, setLinking] = React.useState(false);
   const fileInputRef = React.useRef<HTMLInputElement>(null);
 
-  React.useEffect(() => {
-    casesApi.listAttachments(caseUuid)
-      .then(setAttachments)
-      .catch(() => toast.error("Failed to load attachments"))
+  const loadFiles = React.useCallback(() => {
+    setLoading(true);
+    casesApi.listFiles(caseUuid)
+      .then(setFiles)
+      .catch(() => toast.error("Failed to load files"))
       .finally(() => setLoading(false));
   }, [caseUuid]);
+
+  React.useEffect(() => { loadFiles(); }, [loadFiles]);
 
   async function handleFiles(files: FileList | null) {
     if (!files || !csrfToken) return;
     setUploading(true);
     try {
-      const uploaded = await Promise.all(Array.from(files).map((f) => casesApi.uploadAttachment(caseUuid, f, csrfToken)));
-      setAttachments((prev) => [...uploaded, ...prev]);
-      toast.success(`${uploaded.length} file${uploaded.length !== 1 ? "s" : ""} uploaded`);
+      await Promise.all(Array.from(files).map((f) => casesApi.uploadAttachment(caseUuid, f, csrfToken)));
+      toast.success(`${files.length} file${files.length !== 1 ? "s" : ""} uploaded`);
+      loadFiles();
     } catch { toast.error("Upload failed"); }
     finally {
       setUploading(false);
@@ -380,30 +445,77 @@ function AttachmentsTab({ caseUuid, currentUserId, csrfToken }: {
     }
   }
 
-  async function handleDelete(att: CaseAttachment) {
+  async function handleLink(path: string) {
+    if (!csrfToken) return;
+    setLinking(true);
+    try {
+      await casesApi.createFileLink(caseUuid, path, csrfToken);
+      toast.success("File linked to case");
+      setPickerOpen(false);
+      loadFiles();
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : "";
+      toast.error(msg.includes("API 409") ? "Already linked to this case" : "Failed to link file");
+    } finally { setLinking(false); }
+  }
+
+  async function handleDownload(file: CaseFile) {
+    try {
+      const res = file.source === "upload"
+        ? await casesApi.downloadAttachment(caseUuid, file.uuid)
+        : await casesApi.downloadFileLink(caseUuid, file.uuid);
+      if (!res.ok) throw new Error("Download failed");
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `${file.filename}-PROTECTED.7z`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    } catch { toast.error(`Failed to download ${file.filename}`); }
+  }
+
+  async function handleDelete(file: CaseFile) {
     if (!csrfToken) return;
     try {
-      await casesApi.deleteAttachment(caseUuid, att.uuid, csrfToken);
-      setAttachments((prev) => prev.filter((a) => a.uuid !== att.uuid));
-    } catch { toast.error("Failed to delete attachment"); }
+      if (file.source === "upload") {
+        await casesApi.deleteAttachment(caseUuid, file.uuid, csrfToken);
+      } else {
+        await casesApi.deleteFileLink(caseUuid, file.uuid, csrfToken);
+      }
+      setFiles((prev) => prev.filter((f) => f.uuid !== file.uuid));
+      toast.success("Removed");
+    } catch { toast.error("Failed to remove file"); }
   }
 
   return (
     <div className="flex flex-col gap-4">
-      {/* Drop zone */}
-      <div
-        onDrop={(e) => { e.preventDefault(); handleFiles(e.dataTransfer.files); }}
-        onDragOver={(e) => e.preventDefault()}
-        onClick={() => fileInputRef.current?.click()}
-        className="flex flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed border-border/60 bg-muted/10 hover:bg-muted/20 hover:border-primary/40 transition-colors cursor-pointer py-8 text-center"
-      >
-        <Upload className="size-6 text-muted-foreground/40" />
-        <p className="text-sm text-muted-foreground">{uploading ? "Uploading…" : "Drop files here or click to browse"}</p>
-        <p className="text-xs text-muted-foreground/40">Max 50 MB per file</p>
-        <input ref={fileInputRef} type="file" multiple className="hidden" onChange={(e) => handleFiles(e.target.files)} />
+      {/* Actions */}
+      {canManage && (
+      <div className="flex flex-col gap-3">
+        {/* Drop zone */}
+        <div
+          onDrop={(e) => { e.preventDefault(); handleFiles(e.dataTransfer.files); }}
+          onDragOver={(e) => e.preventDefault()}
+          onClick={() => fileInputRef.current?.click()}
+          className="flex flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed border-border/60 bg-muted/10 hover:bg-muted/20 hover:border-primary/40 transition-colors cursor-pointer py-8 text-center"
+        >
+          <Upload className="size-6 text-muted-foreground/40" />
+          <p className="text-sm text-muted-foreground">{uploading ? "Uploading…" : "Drop files here or click to browse"}</p>
+          <p className="text-xs text-muted-foreground/40">Uploads stay on this server · Max 50 MB per file</p>
+          <input ref={fileInputRef} type="file" multiple className="hidden" onChange={(e) => handleFiles(e.target.files)} />
+        </div>
+        {storageEnabled && (
+          <Button variant="outline" size="sm" className="self-start" onClick={() => setPickerOpen(true)}>
+            <Link2 className="size-4 mr-1.5" />Add from workspace
+          </Button>
+        )}
       </div>
+      )}
 
-      {/* File list */}
+      {/* Unified file list */}
       {loading ? (
         Array.from({ length: 2 }).map((_, i) => (
           <div key={i} className="flex items-center gap-3 p-3 rounded-lg border border-border/40">
@@ -411,30 +523,51 @@ function AttachmentsTab({ caseUuid, currentUserId, csrfToken }: {
             <div className="flex-1 flex flex-col gap-1.5"><Skeleton className="h-3 w-48" /><Skeleton className="h-3 w-28" /></div>
           </div>
         ))
-      ) : attachments.length === 0 ? (
+      ) : files.length === 0 ? (
         <p className="text-sm text-muted-foreground text-center py-6">No files attached yet.</p>
       ) : (
         <div className="flex flex-col gap-2">
-          {attachments.map((att, i) => (
-            <motion.div key={att.uuid} initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.03 }}
+          {files.map((file, i) => (
+            <motion.div key={`${file.source}-${file.uuid}`} initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.03 }}
               className="flex items-center gap-3 rounded-lg border border-border/40 bg-card/40 p-3 hover:bg-card/80 group transition-colors">
               <div className="size-9 rounded-lg bg-muted/40 flex items-center justify-center shrink-0">
                 <FileIconGeneric className="size-4 text-muted-foreground" />
               </div>
               <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium truncate">{att.filename}</p>
+                <div className="flex items-center gap-2 flex-wrap">
+                  <p className="text-sm font-medium truncate">{file.filename}</p>
+                  {file.source === "upload" ? (
+                    <Badge variant="secondary" className="text-[10px] px-1.5 py-0 h-4 gap-0.5">
+                      <Paperclip className="size-2.5" />Uploaded
+                    </Badge>
+                  ) : (
+                    <Badge variant="outline" className="text-[10px] px-1.5 py-0 h-4 gap-0.5">
+                      <Cloud className="size-2.5" />Workspace
+                    </Badge>
+                  )}
+                  {file.source === "workspace" && !file.exists && (
+                    <Badge variant="destructive" className="text-[10px] px-1.5 py-0 h-4 gap-0.5">
+                      <AlertTriangle className="size-2.5" />Missing
+                    </Badge>
+                  )}
+                </div>
                 <p className="text-xs text-muted-foreground">
-                  {formatBytes(att.size_bytes)} · {att.uploaded_by_email ?? "Unknown"} · {formatDistanceToNow(new Date(att.created_at), { addSuffix: true })}
+                  {formatBytes(file.size_bytes)} · {file.uploaded_by_email ?? "Unknown"} · {formatDistanceToNow(new Date(file.created_at), { addSuffix: true })}
                 </p>
               </div>
               <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
-                <Button variant="ghost" size="icon" className="size-7" asChild>
-                  <a href={att.url} download={att.filename} target="_blank" rel="noreferrer">
-                    <Download className="size-3.5" />
-                  </a>
-                </Button>
-                {att.uploaded_by_id === currentUserId && (
-                  <Button variant="ghost" size="icon" className="size-7 hover:text-destructive" onClick={() => handleDelete(att)}>
+                {(file.source === "upload" || file.exists) && (
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button variant="ghost" size="icon" className="size-7" onClick={() => handleDownload(file)}>
+                        <Shield className="size-3.5" />
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>Download as protected 7z</TooltipContent>
+                  </Tooltip>
+                )}
+                {canManage && (
+                  <Button variant="ghost" size="icon" className="size-7 hover:text-destructive" onClick={() => handleDelete(file)}>
                     <Trash2 className="size-3.5" />
                   </Button>
                 )}
@@ -443,7 +576,137 @@ function AttachmentsTab({ caseUuid, currentUserId, csrfToken }: {
           ))}
         </div>
       )}
+
+      {/* Workspace file picker */}
+      {pickerOpen && (
+        <WorkspaceFilePicker
+          workspaceUuid={workspaceUuid}
+          linking={linking}
+          onLink={handleLink}
+          onClose={() => setPickerOpen(false)}
+        />
+      )}
     </div>
+  );
+}
+
+// ─── Workspace file picker ────────────────────────────────────────────────────
+
+function WorkspaceFilePicker({ workspaceUuid, linking, onLink, onClose }: {
+  workspaceUuid: string; linking: boolean; onLink: (path: string) => void; onClose: () => void;
+}) {
+  const [entries, setEntries] = React.useState<FileEntry[]>([]);
+  const [currentPath, setCurrentPath] = React.useState("");
+  const [loading, setLoading] = React.useState(true);
+  const [loadError, setLoadError] = React.useState(false);
+  const [selected, setSelected] = React.useState<string | null>(null);
+
+  const loadFiles = React.useCallback(async (path: string) => {
+    setLoading(true);
+    setLoadError(false);
+    try {
+      const result = await filesApi.list(workspaceUuid, path || undefined);
+      setEntries(result.entries);
+      setCurrentPath(result.path);
+    } catch {
+      setLoadError(true);
+      setEntries([]);
+    } finally { setLoading(false); }
+  }, [workspaceUuid]);
+
+  React.useEffect(() => { loadFiles(""); }, [loadFiles]);
+
+  const sorted = React.useMemo(() =>
+    [...entries].sort((a, b) => {
+      if (a.is_dir !== b.is_dir) return a.is_dir ? -1 : 1;
+      return a.name.localeCompare(b.name);
+    }), [entries]);
+
+  const breadcrumbs = React.useMemo(() => currentPath.split("/").filter(Boolean), [currentPath]);
+
+  const selectedFullPath = selected
+    ? (currentPath ? `${currentPath}/${selected}` : selected)
+    : null;
+
+  return (
+    <Dialog open onOpenChange={(o) => { if (!o) onClose(); }}>
+      <DialogContent className="max-w-2xl">
+        <DialogHeader>
+          <DialogTitle>Link a workspace file</DialogTitle>
+        </DialogHeader>
+
+        {/* Breadcrumbs */}
+        <div className="flex items-center gap-1 text-sm text-muted-foreground flex-wrap">
+          <button onClick={() => { setSelected(null); loadFiles(""); }} className="cursor-pointer hover:text-foreground transition-colors flex items-center">
+            <Home className="size-3.5" />
+          </button>
+          {breadcrumbs.map((part, i) => (
+            <React.Fragment key={i}>
+              <ChevronRight className="size-3.5" />
+              <button
+                onClick={() => { setSelected(null); loadFiles(breadcrumbs.slice(0, i + 1).join("/")); }}
+                className="cursor-pointer hover:text-foreground transition-colors"
+              >
+                {part}
+              </button>
+            </React.Fragment>
+          ))}
+        </div>
+
+        {/* File list */}
+        <div className="border rounded-lg max-h-[40vh] overflow-y-auto">
+          {loading ? (
+            <div className="p-4 space-y-2">
+              {Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} className="h-8 w-full" />)}
+            </div>
+          ) : loadError ? (
+            <div className="flex flex-col items-center gap-2 py-8 text-center">
+              <AlertTriangle className="size-5 text-muted-foreground/40" />
+              <p className="text-sm text-muted-foreground">Failed to load workspace files.</p>
+              <Button variant="outline" size="sm" onClick={() => loadFiles(currentPath)}>Retry</Button>
+            </div>
+          ) : sorted.length === 0 ? (
+            <p className="text-sm text-muted-foreground text-center py-8">No files in this folder</p>
+          ) : (
+            <div className="divide-y">
+              {sorted.map((entry) => {
+                const fullPath = currentPath ? `${currentPath}/${entry.name}` : entry.name;
+                const isSelected = !entry.is_dir && selected === entry.name;
+                return (
+                  <button
+                    key={fullPath}
+                    onClick={() => entry.is_dir ? (setSelected(null), loadFiles(fullPath)) : setSelected(entry.name)}
+                    className={cn(
+                      "flex items-center gap-2 w-full px-3 py-2 text-sm text-left cursor-pointer transition-colors",
+                      isSelected ? "bg-primary/10 text-primary" : "hover:bg-muted/40"
+                    )}
+                  >
+                    {entry.is_dir
+                      ? <Folder className="size-4 text-blue-500 shrink-0" />
+                      : <FileIconGeneric className="size-4 text-muted-foreground shrink-0" />}
+                    <span className="truncate flex-1">{entry.name}</span>
+                    {isSelected && <Check className="size-4 text-primary shrink-0" />}
+                  </button>
+                );
+              })}
+            </div>
+          )}
+        </div>
+
+        {selectedFullPath && (
+          <p className="text-xs text-muted-foreground truncate">
+            Selected: <span className="font-mono">{selectedFullPath}</span>
+          </p>
+        )}
+
+        <DialogFooter>
+          <Button variant="outline" onClick={onClose}>Cancel</Button>
+          <Button onClick={() => selectedFullPath && onLink(selectedFullPath)} disabled={!selectedFullPath || linking}>
+            {linking ? "Linking…" : (<><Plus className="size-4 mr-1.5" />Link to case</>)}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 }
 
@@ -519,8 +782,9 @@ function SessionsTab({ sessions, workspaceUuid, onNavigate }: {
 export default function CaseDetailPage() {
   const { workspace_uuid, case_uuid: uuid } = useParams<{ workspace_uuid: string; case_uuid: string }>();
   const { user } = useAuthContext();
-  const { workspaces } = useWorkspace();
+  const { workspaces, activeWorkspace } = useWorkspace();
   const router = useRouter();
+  const canManageCase = roleAtLeast(activeWorkspace?.role, "analyst");
 
   // Redirect personal workspaces away — cases are team-only
   React.useEffect(() => {
@@ -578,13 +842,13 @@ export default function CaseDetailPage() {
           </div>
         ) : caseData ? (
           <>
-            <InlineNameEditor value={caseData.name} onSave={saveName} />
+            <InlineNameEditor value={caseData.name} onSave={saveName} readOnly={!canManageCase} />
             {caseData.description && (
               <p className="text-sm text-muted-foreground leading-relaxed">{caseData.description}</p>
             )}
             {/* Meta row */}
             <div className="flex items-center gap-4 flex-wrap">
-              <Select value={caseData.status} onValueChange={saveStatus} disabled={savingStatus}>
+              <Select value={caseData.status} onValueChange={saveStatus} disabled={savingStatus || !canManageCase}>
                 <SelectTrigger className="w-32 h-7 text-xs border-border/60">
                   <SelectValue />
                 </SelectTrigger>
@@ -629,7 +893,14 @@ export default function CaseDetailPage() {
               <CommentsTab caseUuid={caseData.uuid} workspaceUuid={workspace_uuid} currentUserId={user.id ?? null} csrfToken={user.csrfToken ?? null} />
             </TabsContent>
             <TabsContent value="attachments">
-              <AttachmentsTab caseUuid={caseData.uuid} currentUserId={user.id ?? null} csrfToken={user.csrfToken ?? null} />
+              <FilesTab
+                caseUuid={caseData.uuid}
+                workspaceUuid={workspace_uuid}
+                currentUserId={user.id ?? null}
+                csrfToken={user.csrfToken ?? null}
+                storageEnabled={!!activeWorkspace?.storage_ready}
+                canManage={canManageCase}
+              />
             </TabsContent>
           </Tabs>
         </motion.div>

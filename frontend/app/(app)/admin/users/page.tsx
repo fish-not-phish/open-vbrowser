@@ -45,7 +45,7 @@ function PasswordDisplay({ password }: { password: string }) {
   return (
     <div className="flex items-center gap-2 rounded-lg bg-muted px-3 py-2 font-mono text-sm">
       <span className="flex-1 select-all">{password}</span>
-      <button onClick={copy} className="text-muted-foreground hover:text-foreground transition-colors">
+      <button onClick={copy} className="cursor-pointer text-muted-foreground hover:text-foreground transition-colors">
         {copied ? <Check className="size-3.5 text-green-500" /> : <Copy className="size-3.5" />}
       </button>
     </div>

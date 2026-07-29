@@ -606,7 +606,7 @@ def admin_analytics(
     # ── Workspaces (non-personal) ─────────────────────────────────────────────
     ws_qs = Workspace.objects.filter(is_personal=False)
     if user_id:
-        ws_qs = ws_qs.filter(members__id=user_id)
+        ws_qs = ws_qs.filter(memberships__user_id=user_id)
     if workspace_uuid:
         ws_qs = ws_qs.filter(uuid=workspace_uuid)
     total_workspaces = ws_qs.count()
@@ -863,7 +863,8 @@ def admin_add_workspace_member(request: HttpRequest, ws_uuid: str, payload: Admi
     if WorkspaceMembership.objects.filter(workspace=ws, user=user).exists():
         raise HttpError(409, "User is already a member of this workspace")
 
-    role = payload.role if payload.role in ('owner', 'admin', 'member') else 'member'
+    from workspaces.permissions import ALL_ROLES
+    role = payload.role if payload.role in ALL_ROLES else 'member'
     membership = WorkspaceMembership.objects.create(workspace=ws, user=user, role=role)
 
     log_audit(request, 'workspace.member.add', target_user=user,
@@ -895,8 +896,9 @@ def admin_change_workspace_member_role(request: HttpRequest, ws_uuid: str, user_
         raise HttpError(404, "Member not found")
 
     new_role = payload.role
-    if new_role not in ('owner', 'admin', 'member'):
-        raise HttpError(400, "Role must be 'owner', 'admin', or 'member'")
+    from workspaces.permissions import ALL_ROLES
+    if new_role not in ALL_ROLES:
+        raise HttpError(400, f"Role must be one of: {', '.join(ALL_ROLES)}")
 
     # Ownership transfer: demote existing owner to admin first
     if new_role == 'owner':

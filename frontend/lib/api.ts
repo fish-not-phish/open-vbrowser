@@ -82,6 +82,15 @@ export interface TrafficEvent {
   flagged: boolean;
 }
 
+export interface IOC {
+  host: string;
+  is_ip: boolean;
+  event_count: number;
+  first_seen: string;
+  last_seen: string;
+  flagged_count: number;
+}
+
 export interface CaseSession {
   uuid: string;
   type: string | null;
@@ -126,6 +135,34 @@ export interface CaseAttachment {
   url: string;
 }
 
+export interface CaseFileLink {
+  uuid: string;
+  s3_path: string;
+  filename: string;
+  size_bytes: number;
+  sha256: string | null;
+  linked_by_id: number | null;
+  linked_by_email: string | null;
+  created_at: string;
+  exists: boolean;
+}
+
+export type CaseFileSource = "upload" | "workspace";
+
+export interface CaseFile {
+  uuid: string;
+  source: CaseFileSource;
+  filename: string;
+  content_type: string;
+  size_bytes: number;
+  uploaded_by_id: number | null;
+  uploaded_by_email: string | null;
+  created_at: string;
+  url: string | null;
+  s3_path: string | null;
+  exists: boolean;
+}
+
 export interface Note {
   uuid: string;
   body: string;
@@ -142,6 +179,21 @@ export interface Tag {
 }
 
 
+export type WorkspaceRole = 'owner' | 'admin' | 'member' | 'analyst' | 'viewer';
+
+const ROLE_RANK: Record<WorkspaceRole, number> = {
+  viewer: 0,
+  analyst: 1,
+  member: 2,
+  admin: 3,
+  owner: 4,
+};
+
+export function roleAtLeast(role: string | undefined | null, minRole: WorkspaceRole): boolean {
+  if (!role || !(role in ROLE_RANK)) return false;
+  return ROLE_RANK[role as WorkspaceRole] >= ROLE_RANK[minRole];
+}
+
 export interface Workspace {
   id: number;
   uuid: string;
@@ -152,13 +204,14 @@ export interface Workspace {
   idle_timeout_minutes: number | null;
   max_session_duration_hours: number | null;
   member_count: number;
-  role: string;
+  role: WorkspaceRole;
   is_personal: boolean;
   allowed_browser_slugs: string[];
   logo_url: string | null;
   enable_network_logging: boolean;
   enable_file_protection: boolean;
   enable_persistent_storage: boolean;
+  storage_ready: boolean;
 }
 
 export interface DashboardActiveSession {
@@ -194,12 +247,12 @@ export interface DashboardCase {
 export interface DashboardMember {
   user_id: number;
   email: string;
-  role: string;
+  role: WorkspaceRole;
   active_sessions: number;
 }
 
 export interface WorkspaceDashboard {
-  role: string;
+  role: WorkspaceRole;
   is_personal: boolean;
   stats: {
     active_sessions: number;
@@ -224,7 +277,7 @@ export interface WorkspaceMember {
   user_id: number;
   username: string;
   email: string;
-  role: string;
+  role: WorkspaceRole;
   joined_at: string;
 }
 
@@ -366,6 +419,9 @@ export const sessionsApi = {
       method: 'POST', csrfToken,
     }),
 
+  iocs: (uuid: string) =>
+    apiFetch<IOC[]>(`/v1/sessions/${uuid}/traffic/iocs/`),
+
   addNote: (uuid: string, body: string, csrfToken: string) =>
     apiFetch<Note>(`/v1/sessions/${uuid}/notes/`, {
       method: 'POST', body: JSON.stringify({ body }), csrfToken,
@@ -440,6 +496,25 @@ export const casesApi = {
   },
   deleteAttachment: (caseUuid: string, attachmentUuid: string, csrfToken: string) =>
     apiFetch<{ status: string }>(`/v1/cases/${caseUuid}/attachments/${attachmentUuid}/`, { method: 'DELETE', csrfToken }),
+  downloadAttachment: (caseUuid: string, attachmentUuid: string) => {
+    const API_BASE_URL = process.env.NEXT_PUBLIC_BASE_URL ?? 'http://127.0.0.1:8000/api/';
+    return fetch(`${API_BASE_URL.replace(/\/$/, '')}/v1/cases/${caseUuid}/attachments/${attachmentUuid}/download/`, {
+      credentials: 'include',
+    });
+  },
+
+  listFiles: (caseUuid: string) =>
+    apiFetch<CaseFile[]>(`/v1/cases/${caseUuid}/files/`),
+  createFileLink: (caseUuid: string, path: string, csrfToken: string) =>
+    apiFetch<CaseFile>(`/v1/cases/${caseUuid}/file-links/`, { method: 'POST', body: JSON.stringify({ path }), csrfToken }),
+  deleteFileLink: (caseUuid: string, linkUuid: string, csrfToken: string) =>
+    apiFetch<{ status: string }>(`/v1/cases/${caseUuid}/file-links/${linkUuid}/`, { method: 'DELETE', csrfToken }),
+  downloadFileLink: (caseUuid: string, linkUuid: string) => {
+    const API_BASE_URL = process.env.NEXT_PUBLIC_BASE_URL ?? 'http://127.0.0.1:8000/api/';
+    return fetch(`${API_BASE_URL.replace(/\/$/, '')}/v1/cases/${caseUuid}/file-links/${linkUuid}/download/`, {
+      credentials: 'include',
+    });
+  },
 };
 
 // ─── Workspaces ───────────────────────────────────────────────────────────────
@@ -659,7 +734,7 @@ export interface AdminWorkspaceMember {
   email: string;
   first_name: string;
   last_name: string;
-  role: string;
+  role: WorkspaceRole;
   joined_at: string;
 }
 
@@ -762,6 +837,24 @@ export const auditApi = {
     if (params?.offset != null) qs.set('offset', String(params.offset));
     const q = qs.toString();
     return apiFetch<AuditLogEntry[]>(`/v1/audit/${q ? '?' + q : ''}`);
+  },
+
+  export: (format: 'json' | 'csv', params?: {
+    action?: string;
+    actor_id?: number;
+    target_user_id?: number;
+    q?: string;
+  }) => {
+    const API_BASE_URL = process.env.NEXT_PUBLIC_BASE_URL ?? 'http://127.0.0.1:8000/api/';
+    const qs = new URLSearchParams();
+    qs.set('format', format);
+    if (params?.action) qs.set('action', params.action);
+    if (params?.actor_id != null) qs.set('actor_id', String(params.actor_id));
+    if (params?.target_user_id != null) qs.set('target_user_id', String(params.target_user_id));
+    if (params?.q) qs.set('q', params.q);
+    return fetch(`${API_BASE_URL.replace(/\/$/, '')}/v1/audit/export/?${qs.toString()}`, {
+      credentials: 'include',
+    });
   },
 };
 

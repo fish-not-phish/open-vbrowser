@@ -636,7 +636,7 @@ export default function AdminSettingsPage() {
                       </code>
                       <button
                         type="button"
-                        className="shrink-0 text-muted-foreground hover:text-foreground transition-colors"
+                        className="shrink-0 cursor-pointer text-muted-foreground hover:text-foreground transition-colors"
                         onClick={() => {
                           navigator.clipboard.writeText(`${window.location.origin}/accounts/oidc/${settings.oidc_provider_type}/login/callback/`);
                           toast.success("Copied to clipboard");
@@ -683,7 +683,7 @@ export default function AdminSettingsPage() {
                   <button
                     type="button"
                     onClick={() => setShowSecret((s) => !s)}
-                    className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                    className="absolute right-2.5 top-1/2 -translate-y-1/2 cursor-pointer text-muted-foreground hover:text-foreground"
                   >
                     {showSecret ? <EyeOff className="size-3.5" /> : <Eye className="size-3.5" />}
                   </button>

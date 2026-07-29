@@ -57,7 +57,7 @@ export function NotificationBell() {
           {unreadCount > 0 && (
             <button
               onClick={handleMarkAll}
-              className="text-xs text-muted-foreground hover:text-primary transition-colors"
+              className="cursor-pointer text-xs text-muted-foreground hover:text-primary transition-colors"
             >
               Mark all read
             </button>
@@ -77,7 +77,7 @@ export function NotificationBell() {
                   key={n.uuid}
                   onClick={() => handleClick(n.uuid, n.workspace_uuid, n.case_uuid)}
                   className={cn(
-                    "flex flex-col gap-1 px-4 py-3 text-left transition-colors hover:bg-sidebar-accent/50 border-b border-border/20 last:border-0",
+                    "flex flex-col gap-1 px-4 py-3 text-left cursor-pointer transition-colors hover:bg-sidebar-accent/50 border-b border-border/20 last:border-0",
                     !n.read && "bg-primary/5"
                   )}
                 >
