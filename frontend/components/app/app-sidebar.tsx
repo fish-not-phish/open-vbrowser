@@ -172,12 +172,11 @@ function WorkspaceSection() {
     }
   }
 
-  if (workspaces.length === 0) return null
-
   return (
     <>
-      <SidebarGroup>
-        <SidebarGroupLabel>Workspace</SidebarGroupLabel>
+      {workspaces.length > 0 && (
+        <SidebarGroup>
+          <SidebarGroupLabel>Workspace</SidebarGroupLabel>
         <SidebarGroupContent>
           <SidebarMenu>
             <SidebarMenuItem>
@@ -240,7 +239,8 @@ function WorkspaceSection() {
             )}
           </SidebarMenu>
         </SidebarGroupContent>
-      </SidebarGroup>
+        </SidebarGroup>
+      )}
 
       <Dialog open={creating} onOpenChange={setCreating}>
         <DialogContent>

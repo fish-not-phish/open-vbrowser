@@ -41,20 +41,62 @@ export function WorkspaceSwitcher() {
     }
   }
 
-  // No workspaces — render a static header (no menu) so nothing workspace-related is shown.
+  // No workspaces — show a muted vBrowser header. Admins / creators can still open
+  // the menu to create a new workspace; others get a static, non-interactive header.
   if (workspaces.length === 0) {
+    const header = (
+      <>
+        <div className="flex size-8 items-center justify-center rounded-lg overflow-hidden shrink-0 bg-transparent">
+          <Image src="/images/browsers/vbrowser-32.png" alt="vBrowser" width={32} height={32} className="size-full object-contain opacity-70" />
+        </div>
+        <div className="flex flex-col items-start leading-tight group-data-[collapsible=icon]:hidden">
+          <span className="text-sm font-medium truncate">vBrowser</span>
+          <span className="text-xs font-light text-sidebar-foreground/60">No Workspaces</span>
+        </div>
+        {user.canCreateWorkspaces && (
+          <ChevronRightIcon className="ml-auto size-4 transition-transform duration-200 max-lg:rotate-90 [[data-state=open]>&]:rotate-270 lg:[[data-state=open]>&]:rotate-180 group-data-[collapsible=icon]:hidden" />
+        )}
+      </>
+    )
+
+    if (!user.canCreateWorkspaces) {
+      return (
+        <SidebarMenu>
+          <SidebarMenuItem>
+            <SidebarMenuButton size="lg" className="cursor-default" aria-disabled>
+              {header}
+            </SidebarMenuButton>
+          </SidebarMenuItem>
+        </SidebarMenu>
+      )
+    }
+
     return (
       <SidebarMenu>
         <SidebarMenuItem>
-          <SidebarMenuButton size="lg" className="cursor-default" aria-disabled>
-            <div className="flex size-8 items-center justify-center rounded-lg overflow-hidden shrink-0 bg-transparent">
-              <Image src="/images/browsers/vbrowser-32.png" alt="vBrowser" width={32} height={32} className="size-full object-contain" />
-            </div>
-            <div className="flex flex-col items-start leading-tight group-data-[collapsible=icon]:hidden">
-              <span className="text-sm font-medium truncate">vBrowser</span>
-              <span className="text-xs font-light text-sidebar-foreground/60">No Workspaces</span>
-            </div>
-          </SidebarMenuButton>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <SidebarMenuButton
+                size="lg"
+                className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
+              >
+                {header}
+              </SidebarMenuButton>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent
+              className="w-(--radix-dropdown-menu-trigger-width) min-w-56"
+              side={isMobile ? 'bottom' : 'right'}
+              sideOffset={isMobile ? 8 : 16}
+            >
+              <DropdownMenuItem
+                className="bg-primary/10 text-primary mt-1 justify-center cursor-pointer"
+                onClick={() => window.dispatchEvent(new CustomEvent('open-create-workspace'))}
+              >
+                <span>New Workspace</span>
+                <PlusIcon className="text-primary" />
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </SidebarMenuItem>
       </SidebarMenu>
     )
