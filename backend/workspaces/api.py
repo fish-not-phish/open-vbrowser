@@ -185,13 +185,14 @@ def update_workspace(request: HttpRequest, ws_uuid: UUID, payload: WorkspaceUpda
     if membership.role not in ('owner', 'admin'):
         raise HttpError(403, "Only workspace owners or admins can update settings")
 
+    provided = payload.model_fields_set
     if payload.name is not None:
         ws.name = payload.name
-    if payload.max_concurrent_sessions_per_member is not None:
+    if "max_concurrent_sessions_per_member" in provided:
         ws.max_concurrent_sessions_per_member = payload.max_concurrent_sessions_per_member
-    if payload.idle_timeout_minutes is not None:
+    if "idle_timeout_minutes" in provided:
         ws.idle_timeout_minutes = payload.idle_timeout_minutes
-    if payload.max_session_duration_hours is not None:
+    if "max_session_duration_hours" in provided:
         ws.max_session_duration_hours = payload.max_session_duration_hours
 
     # Feature flags — only writable by workspace owner/admin, and only

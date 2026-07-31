@@ -314,7 +314,7 @@ export default function AdminSettingsPage() {
     : new Set<string>();
 
   return (
-    <div className="max-w-3xl mx-auto space-y-5">
+    <div className="max-w-3xl mx-auto space-y-5 pb-32">
 
       {/* Header */}
       <motion.div
@@ -340,24 +340,29 @@ export default function AdminSettingsPage() {
       ) : settings ? (
         <div className="space-y-10">
 
-          {/* Save/Reset bar */}
+          {/* Save/Reset bar — fixed to the viewport bottom so it never shifts content */}
           {isDirty && (
             <motion.div
-              initial={{ opacity: 0, y: -4 }} animate={{ opacity: 1, y: 0 }}
-              className="flex items-center justify-end gap-2 rounded-xl border bg-card px-4 py-3"
+              initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.2 }}
+              className="fixed bottom-6 inset-x-0 z-50 px-4 pointer-events-none"
             >
-              <Button variant="outline" size="sm" onClick={reset} className="gap-1.5">
-                <RotateCcw className="size-3.5" /> Reset
-              </Button>
-              <Button
-                size="sm" onClick={save}
-                disabled={!isDirty || saving}
-                className="gap-1.5 min-w-[90px]"
-              >
-                {saved
-                  ? <><CheckCircle2 className="size-3.5" />Saved</>
-                  : <><Save className="size-3.5" />{saving ? "Saving…" : "Save"}</>}
-              </Button>
+              <div className="max-w-3xl mx-auto pointer-events-auto">
+                <div className="flex items-center justify-end gap-2 rounded-xl border bg-card/90 px-4 py-3 shadow-lg backdrop-blur">
+                  <Button variant="outline" size="sm" onClick={reset} className="gap-1.5">
+                    <RotateCcw className="size-3.5" /> Reset
+                  </Button>
+                  <Button
+                    size="sm" onClick={save}
+                    disabled={!isDirty || saving}
+                    className="gap-1.5 min-w-[90px]"
+                  >
+                    {saved
+                      ? <><CheckCircle2 className="size-3.5" />Saved</>
+                      : <><Save className="size-3.5" />{saving ? "Saving…" : "Save"}</>}
+                  </Button>
+                </div>
+              </div>
             </motion.div>
           )}
 

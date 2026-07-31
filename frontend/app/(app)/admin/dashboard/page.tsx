@@ -39,6 +39,7 @@ import {
   FolderOpen,
   Minus,
   Monitor,
+  RotateCcw,
   Search,
   TrendingDown,
   TrendingUp,
@@ -157,7 +158,20 @@ function DateRangePicker({ value, onChange }: { value: DateRange | undefined; on
         </Button>
       </PopoverTrigger>
       <PopoverContent className="w-auto p-0" align="end">
-        <Calendar mode="range" selected={value} onSelect={(r) => { onChange(r); if (r?.from && r?.to) setOpen(false); }} numberOfMonths={2} initialFocus />
+        <Calendar
+          mode="range"
+          selected={value}
+          onSelect={(r) => {
+            onChange(r);
+            // Only close once a true range (two distinct days) is selected, so a
+            // single start-date click keeps the picker open for the end date.
+            if (r?.from && r?.to && format(r.from, "yyyy-MM-dd") !== format(r.to, "yyyy-MM-dd")) {
+              setOpen(false);
+            }
+          }}
+          numberOfMonths={2}
+          initialFocus
+        />
       </PopoverContent>
     </Popover>
   );
@@ -918,6 +932,14 @@ export default function AdminDashboardPage() {
         <div className="ml-auto flex items-center gap-2 flex-wrap">
           <DateRangePicker value={dateRange} onChange={setDateRange} />
           <ScopeSelector scope={scope} onSelect={setScope} />
+          {(scope.type !== "global" || dateRange?.from) && (
+            <Button
+              variant="ghost" size="sm" className="h-8 gap-1.5 text-xs text-muted-foreground hover:text-foreground"
+              onClick={() => { setScope({ type: "global" }); setDateRange(undefined); }}
+            >
+              <RotateCcw className="size-3.5" /> Clear
+            </Button>
+          )}
         </div>
       </div>
 

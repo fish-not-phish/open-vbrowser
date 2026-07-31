@@ -70,6 +70,56 @@ function SectionHeader({ title, description }: { title: string; description: str
   );
 }
 
+function LimitSetting({
+  label, description, value, siteDefault, onChange, unit, canEdit,
+}: {
+  label: string;
+  description: string;
+  value: number | null;
+  siteDefault: number | null;
+  onChange: (v: number | null) => void;
+  unit: string;
+  canEdit: boolean;
+}) {
+  const useDefault = value === null;
+  const max = siteDefault && siteDefault > 0 ? siteDefault : 24;
+  const toggle = (next: boolean) => {
+    if (next) {
+      onChange(null);
+    } else {
+      onChange(1);
+    }
+  };
+  return (
+    <>
+      <div className="flex items-start justify-between gap-8">
+        <div className="min-w-0 flex-1">
+          <p className="text-sm font-medium">{label}</p>
+          <p className="text-xs text-muted-foreground mt-0.5 leading-relaxed">{description}</p>
+        </div>
+        <div className="shrink-0 w-64">
+          <div className="flex items-center justify-end gap-2">
+            <span className="text-xs text-muted-foreground">Use site default</span>
+            <Switch checked={useDefault} onCheckedChange={toggle} disabled={!canEdit} />
+          </div>
+          {!useDefault && (
+            <div className="mt-3">
+              <LimitSlider
+                value={value}
+                onChange={(v) => onChange(v)}
+                min={1} max={max} step={1} unit={unit}
+                allowUnlimited={false}
+                disabled={!canEdit}
+              />
+            </div>
+          )}
+        </div>
+      </div>
+      <Separator />
+    </>
+  );
+}
+
 // ─── Member search combobox ───────────────────────────────────────────────────
 
 type UserResult = { id: number; email: string; first_name: string; last_name: string };
@@ -583,7 +633,7 @@ export default function WorkspaceSettingsPage() {
   if (!user.isLoggedIn) return null;
 
   return (
-    <div className="max-w-3xl mx-auto space-y-5">
+    <div className="max-w-3xl mx-auto space-y-5 pb-32">
       {/* Header */}
       <motion.div
         initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3 }}
@@ -622,28 +672,33 @@ export default function WorkspaceSettingsPage() {
           {/* ── General tab ────────────────────────────────────────────── */}
           <TabsContent value="general" className="space-y-10 mt-0">
 
-            {/* Save/Reset bar */}
+            {/* Save/Reset bar — fixed to the viewport bottom so it never shifts content */}
             {isDirty && (
               <motion.div
-                initial={{ opacity: 0, y: -4 }} animate={{ opacity: 1, y: 0 }}
-                className="flex items-center justify-end gap-2 rounded-xl border bg-card px-4 py-3"
+                initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.2 }}
+                className="fixed bottom-6 inset-x-0 z-50 px-4 pointer-events-none"
               >
-                <Button
-                  variant="outline" size="sm"
-                  onClick={() => { setWs(original); setAllowedSlugs(originalAllowed); setSaved(false); }}
-                  className="gap-1.5"
-                >
-                  <RotateCcw className="size-3.5" /> Reset
-                </Button>
-                <Button
-                  size="sm" onClick={save}
-                  disabled={!isDirty || saving || !canEdit}
-                  className="gap-1.5 min-w-[90px]"
-                >
-                  {saved
-                    ? <><CheckCircle2 className="size-3.5" />Saved</>
-                    : <><Save className="size-3.5" />{saving ? "Saving…" : "Save"}</>}
-                </Button>
+                <div className="max-w-3xl mx-auto pointer-events-auto">
+                  <div className="flex items-center justify-end gap-2 rounded-xl border bg-card/90 px-4 py-3 shadow-lg backdrop-blur">
+                    <Button
+                      variant="outline" size="sm"
+                      onClick={() => { setWs(original); setAllowedSlugs(originalAllowed); setSaved(false); }}
+                      className="gap-1.5"
+                    >
+                      <RotateCcw className="size-3.5" /> Reset
+                    </Button>
+                    <Button
+                      size="sm" onClick={save}
+                      disabled={!isDirty || saving || !canEdit}
+                      className="gap-1.5 min-w-[90px]"
+                    >
+                      {saved
+                        ? <><CheckCircle2 className="size-3.5" />Saved</>
+                        : <><Save className="size-3.5" />{saving ? "Saving…" : "Save"}</>}
+                    </Button>
+                  </div>
+                </div>
               </motion.div>
             )}
 
@@ -736,38 +791,36 @@ export default function WorkspaceSettingsPage() {
                 <div className="grid grid-cols-1 gap-10 lg:grid-cols-3">
                   <SectionHeader
                     title="Session Limits"
-                    description="Per-workspace overrides. All the way right = fall back to site default."
+                    description="Per-workspace overrides. Toggle off “Use site default” to set a custom value up to the site default."
                   />
                   <div className="space-y-5 lg:col-span-2">
-                    <FieldRow label="Max concurrent sessions" description="Max active sessions per member at once.">
-                      <LimitSlider
-                        value={ws.max_concurrent_sessions_per_member ?? null}
-                        onChange={(v) => update("max_concurrent_sessions_per_member", v)}
-                        min={1} max={10} step={1} unit="sessions"
-                        allowUnlimited unlimitedLabel="Site default"
-                        disabled={!canEdit}
-                      />
-                    </FieldRow>
-                    <Separator />
-                    <FieldRow label="Idle timeout" description="Minutes before an idle session is closed.">
-                      <LimitSlider
-                        value={ws.idle_timeout_minutes ?? null}
-                        onChange={(v) => update("idle_timeout_minutes", v)}
-                        min={1} max={60} step={1} unit="min"
-                        allowUnlimited unlimitedLabel="Site default"
-                        disabled={!canEdit}
-                      />
-                    </FieldRow>
-                    <Separator />
-                    <FieldRow label="Max session duration" description="Hard cap in hours.">
-                      <LimitSlider
-                        value={ws.max_session_duration_hours ?? null}
-                        onChange={(v) => update("max_session_duration_hours" as any, v)}
-                        min={1} max={24} step={1} unit="hr"
-                        unlimitedLabel="No limit"
-                        disabled={!canEdit}
-                      />
-                    </FieldRow>
+                    <LimitSetting
+                      label="Max concurrent sessions"
+                      description="Max active sessions per member at once."
+                      value={ws.max_concurrent_sessions_per_member}
+                      siteDefault={siteSettings?.default_max_concurrent_sessions ?? null}
+                      onChange={(v) => update("max_concurrent_sessions_per_member", v)}
+                      unit="sessions"
+                      canEdit={canEdit}
+                    />
+                    <LimitSetting
+                      label="Idle timeout"
+                      description="Minutes before an idle session is closed."
+                      value={ws.idle_timeout_minutes}
+                      siteDefault={siteSettings?.default_idle_timeout_minutes ?? null}
+                      onChange={(v) => update("idle_timeout_minutes", v)}
+                      unit="min"
+                      canEdit={canEdit}
+                    />
+                    <LimitSetting
+                      label="Max session duration"
+                      description="Hard cap in hours."
+                      value={ws.max_session_duration_hours}
+                      siteDefault={siteSettings?.default_max_session_duration_hours ?? null}
+                      onChange={(v) => update("max_session_duration_hours" as any, v)}
+                      unit="hr"
+                      canEdit={canEdit}
+                    />
                   </div>
                 </div>
 

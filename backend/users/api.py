@@ -242,10 +242,15 @@ def update_site_settings(request: HttpRequest, payload: SiteSettingsIn):
         "enable_network_logging", "enable_file_protection", "enable_persistent_storage",
         "browser_vcpu", "browser_memory_gb", "os_vcpu", "os_memory_gb",
     ]
+    provided = payload.model_fields_set
     for field in fields:
         val = getattr(payload, field, None)
         if val is not None:
             setattr(config, field, val)
+    # default_max_session_duration_hours is nullable: an explicit null clears the
+    # cap ("unlimited"). Apply it whenever the field was actually provided.
+    if "default_max_session_duration_hours" in provided:
+        config.default_max_session_duration_hours = payload.default_max_session_duration_hours
 
     # JSON list fields — use sentinel None to detect "not provided"
     if payload.global_allowed_browser_slugs is not None:
@@ -254,6 +259,40 @@ def update_site_settings(request: HttpRequest, payload: SiteSettingsIn):
         config.default_personal_browser_slugs = json.dumps(payload.default_personal_browser_slugs)
 
     config.save()
+
+    # If a global default was lowered, clamp any workspace override that exceeds the
+    # new site max down to match it. Only fields actually changed in this PATCH are
+    # considered, so unrelated saves don't disturb existing workspace overrides.
+    site_override_map = {
+        "max_concurrent_sessions_per_member": "default_max_concurrent_sessions",
+        "idle_timeout_minutes": "default_idle_timeout_minutes",
+        "max_session_duration_hours": "default_max_session_duration_hours",
+    }
+    if any(site_field in provided for site_field in site_override_map.values()):
+        from workspaces.models import Workspace
+        clamped_workspaces = []
+        for ws in Workspace.objects.exclude(is_personal=True):
+            mutated = False
+            for ws_field, site_field in site_override_map.items():
+                if site_field not in provided:
+                    continue
+                new_max = getattr(config, site_field)
+                if new_max is None:
+                    # e.g. max session duration set to "no cap" — nothing to clamp against
+                    continue
+                cur = getattr(ws, ws_field)
+                if cur is not None and cur > new_max:
+                    setattr(ws, ws_field, new_max)
+                    mutated = True
+            if mutated:
+                ws.save(update_fields=tuple(site_override_map.keys()))
+                clamped_workspaces.append(str(ws.uuid))
+        if clamped_workspaces:
+            log_audit(
+                request, 'site_settings.clamp_workspace_limits',
+                workspace_uuids=clamped_workspaces,
+            )
+
     _sync_oidc_social_app(config)
 
     # Auto-disable MFA when OIDC is enabled; restore when OIDC is disabled.

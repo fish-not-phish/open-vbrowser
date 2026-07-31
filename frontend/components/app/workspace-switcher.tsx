@@ -51,7 +51,13 @@ export function WorkspaceSwitcher() {
               size="lg"
               className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
             >
-              <div className="flex size-8 items-center justify-center rounded-lg overflow-hidden shrink-0 bg-sidebar-primary text-sidebar-primary-foreground">
+              <div
+                className={`flex size-8 items-center justify-center rounded-lg overflow-hidden shrink-0 ${
+                  activeWorkspace.logo_url
+                    ? 'bg-transparent'
+                    : 'bg-sidebar-primary text-sidebar-primary-foreground'
+                }`}
+              >
                 {activeWorkspace.logo_url ? (
                   <img src={activeWorkspace.logo_url} alt={activeWorkspace.name} className="size-full object-cover" />
                 ) : activeWorkspace.is_personal ? (
@@ -81,7 +87,11 @@ export function WorkspaceSwitcher() {
                 checked={activeWorkspace.id === ws.id}
                 onCheckedChange={() => switchWorkspace(ws)}
               >
-                <div className="flex size-8 items-center justify-center rounded-lg shrink-0 overflow-hidden bg-muted">
+                <div
+                  className={`flex size-8 items-center justify-center rounded-lg shrink-0 overflow-hidden ${
+                    ws.logo_url ? 'bg-transparent' : 'bg-muted'
+                  }`}
+                >
                   {ws.logo_url ? (
                     <img src={ws.logo_url} alt={ws.name} className="size-full object-cover" />
                   ) : ws.is_personal ? (
