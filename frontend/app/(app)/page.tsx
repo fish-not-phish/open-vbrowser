@@ -11,14 +11,16 @@ import { Spinner } from "@/components/ui/spinner";
  * lands at /{personal_workspace_uuid} immediately.
  */
 export default function RootRedirect() {
-  const { activeWorkspace } = useWorkspace();
+  const { workspaces, activeWorkspace } = useWorkspace();
   const router = useRouter();
 
   useEffect(() => {
     if (activeWorkspace) {
       router.replace(`/${activeWorkspace.uuid}`);
+    } else if (workspaces.length === 0) {
+      router.replace('/no-workspace');
     }
-  }, [activeWorkspace]);
+  }, [activeWorkspace, workspaces.length]);
 
   return (
     <div className="flex h-full items-center justify-center">

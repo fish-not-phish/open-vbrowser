@@ -34,14 +34,11 @@ def _base_ws_qs(user):
     """
     Base queryset for workspaces the user is a member of.
     When personal workspaces are disabled, excludes all is_personal=True workspaces
-    for non-admin users (so they become invisible and inaccessible without being deleted).
+    for everyone (so they become invisible and inaccessible without being deleted).
     """
-    from users.models import UserProfile
     qs = Workspace.objects.filter(memberships__user=user).distinct()
     if not _personal_ws_enabled():
-        profile, _ = UserProfile.objects.get_or_create(user=user)
-        if not profile.is_admin:
-            qs = qs.filter(is_personal=False)
+        qs = qs.filter(is_personal=False)
     return qs
 
 

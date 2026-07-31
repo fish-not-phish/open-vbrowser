@@ -15,6 +15,7 @@ import {
   useSidebar,
 } from '@/components/ui/sidebar'
 import { ChevronRightIcon, PlusIcon, UserIcon, UsersIcon } from 'lucide-react'
+import Image from 'next/image'
 import { useWorkspace } from '@/store/WorkspaceContext'
 import { useRouter, usePathname } from 'next/navigation'
 import { useAuthContext } from '@/store/AuthContext'
@@ -38,6 +39,25 @@ export function WorkspaceSwitcher() {
     } else {
       router.push(`/${ws.uuid}`)
     }
+  }
+
+  // No workspaces — render a static header (no menu) so nothing workspace-related is shown.
+  if (workspaces.length === 0) {
+    return (
+      <SidebarMenu>
+        <SidebarMenuItem>
+          <SidebarMenuButton size="lg" className="cursor-default" aria-disabled>
+            <div className="flex size-8 items-center justify-center rounded-lg overflow-hidden shrink-0 bg-transparent">
+              <Image src="/images/browsers/vbrowser-32.png" alt="vBrowser" width={32} height={32} className="size-full object-contain" />
+            </div>
+            <div className="flex flex-col items-start leading-tight group-data-[collapsible=icon]:hidden">
+              <span className="text-sm font-medium truncate">vBrowser</span>
+              <span className="text-xs font-light text-sidebar-foreground/60">No Workspaces</span>
+            </div>
+          </SidebarMenuButton>
+        </SidebarMenuItem>
+      </SidebarMenu>
+    )
   }
 
   if (!activeWorkspace) return null

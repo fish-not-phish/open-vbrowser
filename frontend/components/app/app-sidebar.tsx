@@ -142,7 +142,7 @@ function WorkspaceSection() {
   const pathname = usePathname()
   const router = useRouter()
   const { user } = useAuthContext()
-  const { activeWorkspace, addWorkspace } = useWorkspace()
+  const { workspaces, activeWorkspace, addWorkspace } = useWorkspace()
   const [creating, setCreating] = useState(false)
   const [newName, setNewName] = useState('')
   const [newSlug, setNewSlug] = useState('')
@@ -171,6 +171,8 @@ function WorkspaceSection() {
       setSaving(false)
     }
   }
+
+  if (workspaces.length === 0) return null
 
   return (
     <>
