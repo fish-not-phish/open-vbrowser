@@ -23,7 +23,7 @@ import { toast } from "sonner";
 import { AnimatePresence, motion } from "motion/react";
 import {
   Check, CheckCircle2, Copy, KeyRound, Loader2, MoreHorizontalIcon,
-  SearchIcon, ShieldCheck, ShieldOff, UserCheck, UserPlus, UserX, X, XCircle,
+  SearchIcon, ShieldCheck, ShieldOff, Trash, UserCheck, UserPlus, UserX, X, XCircle,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -33,6 +33,26 @@ function initials(u: AdminUser) {
   if (u.first_name || u.last_name)
     return `${u.first_name?.[0] ?? ""}${u.last_name?.[0] ?? ""}`.toUpperCase();
   return u.email.slice(0, 2).toUpperCase();
+}
+
+function isStale(lastLogin: string | null): boolean {
+  if (!lastLogin) return false;
+  const cutoff = Date.now() - 90 * 24 * 60 * 60 * 1000;
+  return new Date(lastLogin).getTime() < cutoff;
+}
+
+function formatLastLogin(lastLogin: string | null): string {
+  if (!lastLogin) return "Never logged in";
+  const diff = Date.now() - new Date(lastLogin).getTime();
+  const mins = Math.floor(diff / 60000);
+  const hours = Math.floor(mins / 60);
+  const days = Math.floor(hours / 24);
+  if (mins < 1) return "Logged in just now";
+  if (mins < 60) return `Logged in ${mins}m ago`;
+  if (hours < 24) return `Logged in ${hours}h ago`;
+  if (days < 30) return `Logged in ${days}d ago`;
+  const date = new Date(lastLogin);
+  return `Last login ${date.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}`;
 }
 
 function PasswordDisplay({ password }: { password: string }) {
@@ -127,6 +147,10 @@ export default function AdminUsersPage() {
   const [resettingUser, setResettingUser] = React.useState<AdminUser | null>(null);
   const [resetPassword, setResetPassword] = React.useState<string | null>(null);
 
+  // Delete account dialog
+  const [deletingUser, setDeletingUser] = React.useState<AdminUser | null>(null);
+  const [deleting, setDeleting] = React.useState(false);
+
   // Email availability — only run while the dialog is open and not yet succeeded
   const emailStatus = useEmailCheck(newUser.email, creating && !createdPassword);
 
@@ -181,6 +205,30 @@ export default function AdminUsersPage() {
       toast.success(`${updated.email} ${updated.is_active ? "enabled" : "disabled"}`);
     } catch {
       toast.error("Failed to update user");
+    }
+  }
+
+  async function handleDelete(u: AdminUser) {
+    if (!user.csrfToken) return;
+    setDeleting(true);
+    try {
+      await adminApi.deleteUser(u.id, user.csrfToken);
+      setUsers((prev) => prev.filter((x) => x.id !== u.id));
+      setDeletingUser(null);
+      toast.success(`${u.email} deleted`);
+    } catch (e) {
+      // Feedback from the backend — e.g. "owns: X. Remove them as an owner..."
+      const msg = e instanceof Error ? e.message : "";
+      const status = parseInt(msg.match(/API (\d+)/)?.[1] ?? "0", 10);
+      if (status === 409) {
+        let detail = msg.replace(/^API 409:\s*/, "").trim();
+        try { detail = JSON.parse(detail).detail ?? detail; } catch {}
+        toast.error(detail || "This user owns a workspace and cannot be deleted yet.");
+      } else {
+        toast.error("Failed to delete user");
+      }
+    } finally {
+      setDeleting(false);
     }
   }
 
@@ -329,12 +377,26 @@ export default function AdminUsersPage() {
                         {!u.is_active && (
                           <Badge variant="destructive" className="font-normal text-xs">Disabled</Badge>
                         )}
+                        {!u.last_login && (
+                          <Badge variant="outline" className="font-normal text-xs text-muted-foreground">
+                            Never logged in
+                          </Badge>
+                        )}
+                        {isStale(u.last_login) && (
+                          <Badge variant="secondary" className="font-normal text-xs">
+                            Stale
+                          </Badge>
+                        )}
                       </div>
-                      {(u.first_name || u.last_name || u.username) && (
-                        <p className="mt-0.5 truncate text-muted-foreground text-xs">
-                          {[u.first_name, u.last_name].filter(Boolean).join(" ") || u.username}
-                        </p>
-                      )}
+                      <p className="mt-0.5 truncate text-muted-foreground text-xs">
+                        {[u.first_name, u.last_name].filter(Boolean).join(" ") || u.username}
+                        {(u.first_name || u.last_name || u.username) && (
+                          <span className="text-muted-foreground/70"> · {formatLastLogin(u.last_login)}</span>
+                        )}
+                        {!(u.first_name || u.last_name || u.username) && (
+                          <span>{formatLastLogin(u.last_login)}</span>
+                        )}
+                      </p>
                     </div>
 
                     {!isSelf && (
@@ -361,6 +423,12 @@ export default function AdminUsersPage() {
                             {u.is_active
                               ? <><UserX className="size-3.5" />Disable account</>
                               : <><UserCheck className="size-3.5" />Enable account</>}
+                          </DropdownMenuItem>
+                          <DropdownMenuItem
+                            className="gap-2 text-destructive focus:text-destructive"
+                            onClick={() => setDeletingUser(u)}
+                          >
+                            <Trash className="size-3.5" /> Delete account
                           </DropdownMenuItem>
                         </DropdownMenuContent>
                       </DropdownMenu>
@@ -545,6 +613,29 @@ export default function AdminUsersPage() {
           )}
           <DialogFooter>
             <Button onClick={() => { setResettingUser(null); setResetPassword(null); }}>Done</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* ── Delete account dialog ─────────────────────────────────────── */}
+      <Dialog open={!!deletingUser} onOpenChange={(o) => { if (!o) setDeletingUser(null); }}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Delete Account</DialogTitle>
+            <DialogDescription>
+              Delete <strong>{deletingUser?.email}</strong>? This permanently removes the
+              account and all of its data and cannot be undone.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setDeletingUser(null)} disabled={deleting}>Cancel</Button>
+            <Button
+              variant="destructive"
+              onClick={() => deletingUser && handleDelete(deletingUser)}
+              disabled={deleting}
+            >
+              {deleting ? "Deleting…" : "Delete account"}
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

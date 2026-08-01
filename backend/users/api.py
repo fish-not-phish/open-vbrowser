@@ -1,4 +1,5 @@
 from ninja import Router
+from ninja.errors import HttpError
 from django.middleware.csrf import get_token
 from django.http import HttpRequest
 from django.utils import timezone
@@ -354,6 +355,7 @@ def _admin_user_out(user) -> dict:
         "is_active": user.is_active,
         "is_admin": profile.is_admin,
         "date_joined": user.date_joined,
+        "last_login": user.last_login,
     }
 
 
@@ -544,6 +546,50 @@ def update_user(request: HttpRequest, user_id: int, payload: AdminUserUpdateIn):
     if changes:
         log_audit(request, 'user.update', target_user=user, **changes)
     return _admin_user_out(user)
+
+
+@router.delete("/admin/users/{user_id}", response={204: None}, auth=admin_session_auth)
+def delete_user(request: HttpRequest, user_id: int):
+    """Delete a user (admin only).
+
+    Rule: a user who is the owner of any non-personal (team) workspace cannot be
+    deleted. The admin must first remove them as owner of those workspaces.
+    Ownership of a personal workspace does NOT block deletion — the user's personal
+    workspaces are removed along with the account.
+    """
+    from django.contrib.auth.models import User as DjangoUser
+    from workspaces.models import Workspace, WorkspaceMembership
+
+    try:
+        user = DjangoUser.objects.get(id=user_id)
+    except DjangoUser.DoesNotExist:
+        raise HttpError(404, "User not found")
+
+    if user == request.auth:
+        raise HttpError(400, "You cannot delete your own account")
+
+    owned_ws = list(
+        WorkspaceMembership.objects
+        .filter(user=user, role='owner', workspace__is_personal=False)
+        .select_related('workspace')
+    )
+    if owned_ws:
+        names = ", ".join(m.workspace.name for m in owned_ws)
+        raise HttpError(
+            409,
+            f"{user.email} owns: {names}. Remove them as an owner of all workspaces before deleting.",
+        )
+
+    # Remove the user's personal workspaces (owned solely by them; orphans otherwise).
+    # Deleting them also cascades their memberships, so ownership checks don't apply.
+    Workspace.objects.filter(is_personal=True, memberships__user=user).delete()
+
+    # The user's Django/allauth sessions, MFA, social accounts, API keys, limits and
+    # notifications all cascade on user.delete(), logging them out everywhere.
+    email = user.email
+    log_audit(request, 'user.delete', target_user=user, email=email)
+    user.delete()
+    return 204, None
 
 
 @router.get("/admin/analytics", response=AdminAnalyticsOut, auth=admin_session_auth)

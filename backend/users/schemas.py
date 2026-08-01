@@ -120,6 +120,7 @@ class AdminUserOut(Schema):
     is_active: bool
     is_admin: bool
     date_joined: datetime
+    last_login: Optional[datetime] = None
 
 
 class AdminUserCreateIn(Schema):

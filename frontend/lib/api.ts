@@ -668,6 +668,7 @@ export interface AdminUser {
   is_active: boolean;
   is_admin: boolean;
   date_joined: string;
+  last_login: string | null;
   generated_password?: string;
 }
 
@@ -752,6 +753,8 @@ export const adminApi = {
     apiFetch<AdminUser>(`/accounts/admin/users/${id}`, { method: 'PATCH', body: JSON.stringify(payload), csrfToken }),
   resetPassword: (id: number, csrfToken: string) =>
     apiFetch<{ generated_password: string }>(`/accounts/admin/users/${id}/reset-password`, { method: 'POST', csrfToken }),
+  deleteUser: (id: number, csrfToken: string) =>
+    apiFetch<void>(`/accounts/admin/users/${id}`, { method: 'DELETE', csrfToken }),
 
   getWorkspaceBrowsers: (uuid: string) => apiFetch<string[]>(`/v1/workspaces/${uuid}/browsers/`),
   setWorkspaceBrowsers: (uuid: string, slugs: string[], csrfToken: string) =>
