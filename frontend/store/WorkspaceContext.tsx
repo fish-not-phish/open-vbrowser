@@ -25,6 +25,7 @@ function writeStoredUuid(uuid: string | null) {
 interface WorkspaceContextValue {
   workspaces: Workspace[]
   activeWorkspace: Workspace | null
+  loading: boolean
   setActiveWorkspace: (ws: Workspace) => void
   reload: () => Promise<void>
   addWorkspace: (ws: Workspace) => void
@@ -33,6 +34,7 @@ interface WorkspaceContextValue {
 const WorkspaceContext = createContext<WorkspaceContextValue>({
   workspaces: [],
   activeWorkspace: null,
+  loading: true,
   setActiveWorkspace: () => {},
   reload: async () => {},
   addWorkspace: () => {},
@@ -44,6 +46,7 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
   const pathname = usePathname()
   const [workspaces, setWorkspaces] = useState<Workspace[]>([])
   const [activeWorkspace, setActiveWorkspaceState] = useState<Workspace | null>(null)
+  const [loading, setLoading] = useState(true)
 
   // Wrap setter so every explicit selection is persisted immediately
   const setActiveWorkspace = useCallback((ws: Workspace) => {
@@ -53,6 +56,7 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
 
   const reload = useCallback(async () => {
     if (!user.isLoggedIn) return
+    setLoading(true)
     try {
       const ws = await workspacesApi.list()
       setWorkspaces(ws)
@@ -104,7 +108,9 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
         // 3. Fall back to personal workspace, then first available
         return ws.find((w) => w.is_personal) ?? ws[0] ?? null
       })
-    } catch {}
+    } catch {} finally {
+      setLoading(false)
+    }
   }, [user.isLoggedIn, user.personalWorkspacesEnabled, user.isAdmin, pathname, router])
 
   useEffect(() => {
@@ -117,7 +123,7 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
   }
 
   return (
-    <WorkspaceContext.Provider value={{ workspaces, activeWorkspace, setActiveWorkspace, reload, addWorkspace }}>
+    <WorkspaceContext.Provider value={{ workspaces, activeWorkspace, loading, setActiveWorkspace, reload, addWorkspace }}>
       {children}
     </WorkspaceContext.Provider>
   )

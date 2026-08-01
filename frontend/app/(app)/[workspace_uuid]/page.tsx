@@ -163,7 +163,9 @@ export default function HomePage() {
   const { workspaces, activeWorkspace, setActiveWorkspace } = useWorkspace();
   const router = useRouter();
 
-  // Sync active workspace from URL param
+  // Sync active workspace from URL param. User-facing workspace validation happens
+  // during render (below) so a typo'd / no-workspacec path 404s instead of silently
+  // showing whichever workspace happened to be active.
   React.useEffect(() => {
     const ws = workspaces.find((w) => w.uuid === workspace_uuid);
     if (ws) setActiveWorkspace(ws);
