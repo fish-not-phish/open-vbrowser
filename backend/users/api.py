@@ -128,7 +128,24 @@ def change_password(request, payload: PasswordChangeIn):
     user.set_password(payload.new_password)
     user.save()
 
-    return {"success": True, "message": "Password changed successfully"}
+    # Invalidate all other sessions for this user (keep the current one).
+    from django.contrib.sessions.models import Session
+
+    current_key = request.session.session_key
+    now = timezone.now()
+    other_sessions = Session.objects.filter(expire_date__gt=now).exclude(
+        session_key=current_key
+    )
+    for s in other_sessions:
+        try:
+            data = s.get_decoded()
+        except Exception:
+            continue
+        if str(data.get('_auth_user_id', '')) == str(user.id):
+            s.delete()
+
+    log_audit(request, 'user.change_password', target_user=user)
+    return {"success": True, "message": "Password changed successfully, other sessions have been logged out"}
 
 
 # ======================
@@ -1039,5 +1056,19 @@ def reset_user_password(request: HttpRequest, user_id: int):
     password = ''.join(secrets.choice(alphabet) for _ in range(16))
     user.set_password(password)
     user.save()
+
+    # Invalidate all of the user's active sessions (admin reset logs them out everywhere).
+    from django.contrib.sessions.models import Session
+
+    now = timezone.now()
+    sessions = Session.objects.filter(expire_date__gt=now)
+    for s in sessions:
+        try:
+            data = s.get_decoded()
+        except Exception:
+            continue
+        if str(data.get('_auth_user_id', '')) == str(user.id):
+            s.delete()
+
     log_audit(request, 'user.password_reset', target_user=user)
     return {"generated_password": password}
