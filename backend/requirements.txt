@@ -20,7 +20,7 @@ gunicorn==26.0.0
 uvicorn==0.51.0
 fido2==2.2.1
 whitenoise==6.12.0
-Pillow==12.3.0
+Pillow==13.0.0
 boto3==1.43.51
 django-storages[s3]==1.14.6
 py7zr==1.1.3
