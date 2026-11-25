@@ -83,5 +83,8 @@
   "trustedDependencies": [
     "sharp",
     "unrs-resolver"
-  ]
+  ],
+  "overrides": {
+    "@tiptap/core": "3.30.5"
+  }
 }
